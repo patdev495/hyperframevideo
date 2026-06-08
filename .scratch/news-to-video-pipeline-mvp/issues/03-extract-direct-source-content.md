@@ -14,13 +14,13 @@ This slice should focus on returning typed extracted source content. It should n
 
 ## Acceptance criteria
 
-- [ ] A caller can pass a source URL and receive typed extracted content.
-- [ ] The extractor preserves the original URL.
-- [ ] The extractor captures title, extracted text, and any available publish date or source metadata.
-- [ ] Readability-first extraction is attempted before Playwright fallback.
-- [ ] Playwright fallback can be triggered in a controlled test scenario.
-- [ ] Tests use local fixtures or mocked responses rather than live news sites.
-- [ ] Extraction failures return actionable typed errors or warnings.
+- [x] A caller can pass a source URL and receive typed extracted content.
+- [x] The extractor preserves the original URL.
+- [x] The extractor captures title, extracted text, and any available publish date or source metadata.
+- [x] Readability-first extraction is attempted before Playwright fallback.
+- [x] Playwright fallback can be triggered in a controlled test scenario.
+- [x] Tests use local fixtures or mocked responses rather than live news sites.
+- [x] Extraction failures return actionable typed errors or warnings.
 
 ## Blocked by
 
