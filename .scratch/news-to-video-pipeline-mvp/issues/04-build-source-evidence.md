@@ -14,11 +14,11 @@ This slice should preserve source grounding and make missing or weak metadata vi
 
 ## Acceptance criteria
 
-- [ ] Extracted content is normalized into a typed Source Evidence model.
-- [ ] Source Evidence includes URL, title, source name when available, publish date when available, extracted text, and warnings.
-- [ ] Missing title, missing publish date, and low-content extraction produce warnings.
-- [ ] Important source fields are serializable to JSON without ad hoc dictionary assembly at call sites.
-- [ ] Tests cover complete metadata, missing metadata, and low-content extraction cases.
+- [x] Extracted content is normalized into a typed Source Evidence model.
+- [x] Source Evidence includes URL, title, source name when available, publish date when available, extracted text, and warnings.
+- [x] Missing title, missing publish date, and low-content extraction produce warnings.
+- [x] Important source fields are serializable to JSON without ad hoc dictionary assembly at call sites.
+- [x] Tests cover complete metadata, missing metadata, and low-content extraction cases.
 
 ## Blocked by
 
