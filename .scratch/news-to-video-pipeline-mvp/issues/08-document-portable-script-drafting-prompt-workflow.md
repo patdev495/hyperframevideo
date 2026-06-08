@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Document portable Script Drafting Prompt workflow
 
@@ -14,12 +14,12 @@ The workflow must reinforce that external chatbots draft only the **Source-Groun
 
 ## Acceptance criteria
 
-- [ ] Documentation explains where to find Source Evidence in a Production Run.
-- [ ] Documentation explains how to use the portable Script Drafting Prompt.
-- [ ] Documentation explains that the chatbot should output `SCRIPT.md` only.
-- [ ] Documentation explains how to replace or edit a draft `SCRIPT.md`.
-- [ ] Documentation explains that `Status` remains `draft` until the user approves it.
-- [ ] Documentation points to `docs/artifacts/script.md` as the authoritative script format.
+- [x] Documentation explains where to find Source Evidence in a Production Run.
+- [x] Documentation explains how to use the portable Script Drafting Prompt.
+- [x] Documentation explains that the chatbot should output `SCRIPT.md` only.
+- [x] Documentation explains how to replace or edit a draft `SCRIPT.md`.
+- [x] Documentation explains that `Status` remains `draft` until the user approves it.
+- [x] Documentation points to `docs/artifacts/script.md` as the authoritative script format.
 
 ## Blocked by
 
