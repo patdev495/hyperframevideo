@@ -5,8 +5,15 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.pytype/
+.tox/
+.nox/
 .coverage
+.coverage.*
 htmlcov/
+.hypothesis/
+.eggs/
+*.egg-info/
 .venv/
 venv/
 env/
@@ -20,21 +27,38 @@ pnpm-debug.log*
 dist/
 build/
 .vite/
+coverage/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# Vue / frontend tooling
+.nuxt/
+.output/
+.vercel/
+.netlify/
 
 # Playwright
 test-results/
 playwright-report/
+blob-report/
+playwright/.cache/
 
 # HyperFrames / generated video artifacts
 .runs/
 captures/
 rendered/
 frames/
+out/
+tmp/
+temp/
 *.mp4
 *.mov
 *.webm
 *.wav
 *.aac
+*.mp3
+*.m4a
 
 # Local environment
 .env
