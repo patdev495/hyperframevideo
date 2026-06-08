@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Wire Direct Source to Draft CLI flow
 
@@ -14,14 +14,14 @@ This is the first end-to-end tracer bullet for the **News-to-Video Pipeline**. I
 
 ## Acceptance criteria
 
-- [ ] A CLI command accepts a source URL.
-- [ ] Running the command creates a new `.runs/<run-id>/` directory.
-- [ ] The run contains `source-evidence.json`.
-- [ ] The run contains `SELECTED_STORY.md`.
-- [ ] The run contains `SCRIPT.md` with `Status: draft`.
-- [ ] CLI output prints the created run path and next-step guidance for Script Approval.
-- [ ] Failures produce readable diagnostics and do not leave misleading approved artifacts.
-- [ ] An integration-style test covers the end-to-end flow using a local fixture source.
+- [x] A CLI command accepts a source URL.
+- [x] Running the command creates a new `.runs/<run-id>/` directory.
+- [x] The run contains `source-evidence.json`.
+- [x] The run contains `SELECTED_STORY.md`.
+- [x] The run contains `SCRIPT.md` with `Status: draft`.
+- [x] CLI output prints the created run path and next-step guidance for Script Approval.
+- [x] Failures produce readable diagnostics and do not leave misleading approved artifacts.
+- [x] An integration-style test covers the end-to-end flow using a local fixture source.
 
 ## Blocked by
 
