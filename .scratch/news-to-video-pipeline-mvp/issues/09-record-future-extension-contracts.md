@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Record future extension contracts
 
@@ -14,12 +14,12 @@ The contracts should respect existing ADRs: HyperFrames is a dependency/renderin
 
 ## Acceptance criteria
 
-- [ ] There is a documented future **Voiceover Provider** contract that can support HyperFrames local TTS first and later Vietnamese providers.
-- [ ] There is a documented `STORYBOARD.md` responsibility boundary distinct from `SCRIPT.md`.
-- [ ] There is a documented HyperFrames render boundary that keeps orchestration in this repo.
-- [ ] There is a documented **Discovery Request** boundary for future web search and News Candidate selection.
-- [ ] There is a documented future web UI stack note: Vue and Tailwind CSS.
-- [ ] The documentation does not implement TTS, rendering, Discovery Request, or web UI.
+- [x] There is a documented future **Voiceover Provider** contract that can support HyperFrames local TTS first and later Vietnamese providers.
+- [x] There is a documented `STORYBOARD.md` responsibility boundary distinct from `SCRIPT.md`.
+- [x] There is a documented HyperFrames render boundary that keeps orchestration in this repo.
+- [x] There is a documented **Discovery Request** boundary for future web search and News Candidate selection.
+- [x] There is a documented future web UI stack note: Vue and Tailwind CSS.
+- [x] The documentation does not implement TTS, rendering, Discovery Request, or web UI.
 
 ## Blocked by
 
