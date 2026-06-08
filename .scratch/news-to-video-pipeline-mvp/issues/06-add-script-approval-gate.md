@@ -14,12 +14,12 @@ This slice does not need to implement TTS or rendering.
 
 ## Acceptance criteria
 
-- [ ] The gate can parse `Status: draft` from `SCRIPT.md`.
-- [ ] The gate can parse `Status: approved` from `SCRIPT.md`.
-- [ ] Missing status is treated as not approved.
-- [ ] Unknown status values are treated as not approved with a clear diagnostic.
-- [ ] The gate exposes a simple typed result for callers.
-- [ ] Tests cover draft, approved, missing status, unknown status, and case/spacing behavior if supported.
+- [x] The gate can parse `Status: draft` from `SCRIPT.md`.
+- [x] The gate can parse `Status: approved` from `SCRIPT.md`.
+- [x] Missing status is treated as not approved.
+- [x] Unknown status values are treated as not approved with a clear diagnostic.
+- [x] The gate exposes a simple typed result for callers.
+- [x] Tests cover draft, approved, missing status, unknown status, and case/spacing behavior if supported.
 
 ## Blocked by
 
