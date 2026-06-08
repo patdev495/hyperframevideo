@@ -14,13 +14,13 @@ This slice may generate a structured draft or stub that Codex or an external cha
 
 ## Acceptance criteria
 
-- [ ] `SELECTED_STORY.md` is generated from Source Evidence with readable story context.
-- [ ] `SCRIPT.md` is generated with `Status: draft`.
-- [ ] `SCRIPT.md` includes title, hook, Source-Grounded Script segments, fact check, and production notes sections.
-- [ ] Script segments include narration, on-screen text, purpose, and facts used.
-- [ ] The generated artifact references Source Evidence rather than unsupported claims.
-- [ ] The script artifact follows the structure documented in `docs/artifacts/script.md`.
-- [ ] Tests verify required headers, default values, required sections, and source-grounding placeholders.
+- [x] `SELECTED_STORY.md` is generated from Source Evidence with readable story context.
+- [x] `SCRIPT.md` is generated with `Status: draft`.
+- [x] `SCRIPT.md` includes title, hook, Source-Grounded Script segments, fact check, and production notes sections.
+- [x] Script segments include narration, on-screen text, purpose, and facts used.
+- [x] The generated artifact references Source Evidence rather than unsupported claims.
+- [x] The script artifact follows the structure documented in `docs/artifacts/script.md`.
+- [x] Tests verify required headers, default values, required sections, and source-grounding placeholders.
 
 ## Blocked by
 

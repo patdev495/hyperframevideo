@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from hyperframevideo.story_artifacts import StoryArtifacts
+
 
 class ProductionRunExistsError(Exception):
     pass
@@ -39,3 +41,11 @@ class ProductionRunStore:
             raise ProductionRunExistsError(f"Production Run already exists: {run_id}") from error
 
         return run
+
+    def write_story_artifacts(
+        self, run: ProductionRun, artifacts: StoryArtifacts
+    ) -> None:
+        run.selected_story_path.write_text(
+            artifacts.selected_story_markdown, encoding="utf-8"
+        )
+        run.script_path.write_text(artifacts.script_markdown, encoding="utf-8")

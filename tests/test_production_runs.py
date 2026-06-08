@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from hyperframevideo.production_runs import ProductionRunExistsError, ProductionRunStore
+from hyperframevideo.story_artifacts import StoryArtifacts
 
 
 def test_create_production_run_returns_artifact_paths(tmp_path: Path) -> None:
@@ -36,3 +37,19 @@ def test_default_store_creates_runs_under_runs_directory(
 
     assert run.directory == Path(".runs") / "deterministic-run"
     assert run.directory.is_dir()
+
+
+def test_write_story_artifacts_uses_production_run_paths(tmp_path: Path) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="run-001")
+    artifacts = StoryArtifacts(
+        selected_story_markdown="# Selected Story\n\nStory context.",
+        script_markdown="Status: draft\nLanguage: en\n",
+    )
+
+    store.write_story_artifacts(run, artifacts)
+
+    assert run.selected_story_path.read_text(encoding="utf-8") == (
+        "# Selected Story\n\nStory context."
+    )
+    assert run.script_path.read_text(encoding="utf-8") == "Status: draft\nLanguage: en\n"
