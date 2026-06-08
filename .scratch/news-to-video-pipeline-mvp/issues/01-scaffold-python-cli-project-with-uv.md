@@ -14,12 +14,12 @@ This slice should not implement source extraction or artifact generation yet. It
 
 ## Acceptance criteria
 
-- [ ] The repo has a `uv`-managed Python project configuration.
-- [ ] A CLI command can be invoked locally and returns a basic help or version response.
-- [ ] The project has a clear source package layout for the News-to-Video Pipeline.
-- [ ] Typed models are available for future module boundary data.
-- [ ] A test runner is configured and can run at least one passing smoke test.
-- [ ] Documentation or README notes explain the basic local setup command.
+- [x] The repo has a `uv`-managed Python project configuration.
+- [x] A CLI command can be invoked locally and returns a basic help or version response.
+- [x] The project has a clear source package layout for the News-to-Video Pipeline.
+- [x] Typed models are available for future module boundary data.
+- [x] A test runner is configured and can run at least one passing smoke test.
+- [x] Documentation or README notes explain the basic local setup command.
 
 ## Blocked by
 
