@@ -64,6 +64,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="RUN_ID",
         help="Generate voiceover for an approved production run.",
     )
+    parser.add_argument(
+        "--storyboard",
+        metavar="RUN_ID",
+        help="Generate a storyboard for a production run with voiceover timing.",
+    )
     return parser
 
 
@@ -77,6 +82,40 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.url and args.discover:
         parser.error("Provide either a source URL or --discover, not both.")
+
+    if args.storyboard:
+        if args.url or args.discover or args.voiceover:
+            parser.error("Provide --storyboard without a source URL, --discover, or --voiceover.")
+
+        store = ProductionRunStore()
+        run = ProductionRun(
+            run_id=args.storyboard,
+            directory=store.root / args.storyboard,
+        )
+        try:
+            script_markdown = run.script_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            print(
+                f"Error: SCRIPT.md not found for Production Run: {args.storyboard}",
+                file=sys.stderr,
+            )
+            return 1
+
+        approval = ScriptApprovalGate().evaluate(script_markdown)
+        if not approval.is_approved:
+            print(f"Error: {approval.diagnostic}", file=sys.stderr)
+            return 1
+
+        if not run.voiceover_manifest_path.exists():
+            print(
+                f"Error: voiceover.json not found for Production Run: {args.storyboard}",
+                file=sys.stderr,
+            )
+            return 1
+
+        print(f"Storyboard inputs ready for Production Run: {args.storyboard}")
+        print("Storyboard generation placeholder complete.")
+        return 0
 
     if args.voiceover:
         if args.url or args.discover:

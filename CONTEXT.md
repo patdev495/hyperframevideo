@@ -60,6 +60,10 @@ _Avoid_: Video length, runtime limit, time cap
 A reusable style preset that defines text styling, color palette, motion, layout, and scene patterns for a video.
 _Avoid_: Theme, template, design style
 
+**Storyboard Artifact**:
+The `STORYBOARD.md` production artifact that turns an approved script and voiceover timing into segment-by-segment visual instructions for a Vertical Short Video.
+_Avoid_: Shot list, animation prompt, render config
+
 **Curiosity-Driven News Explainer**:
 A fast-paced but source-grounded editorial tone that creates curiosity without exaggerating the facts.
 _Avoid_: Breaking news, viral script, clickbait
@@ -80,6 +84,8 @@ _Avoid_: Breaking news, viral script, clickbait
 - A **Source-Grounded Script** must fit the **Duration Budget** before **Script Approval**.
 - A **Vertical Short Video** uses one **Visual Treatment**.
 - A **Script Drafting Prompt** can produce a **Source-Grounded Script** from **Source Evidence**.
+- A **Storyboard Artifact** depends on an approved **Source-Grounded Script** and generated voiceover timing.
+- A **Storyboard Artifact** prepares visual instructions for HyperFrames composition generation without containing render code.
 - The default tone for a **Source-Grounded Script** is **Curiosity-Driven News Explainer**.
 
 ## Example dialogue

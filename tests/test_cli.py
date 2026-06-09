@@ -491,3 +491,94 @@ def test_cli_voiceover_cleans_empty_audio_dir_after_provider_setup_failure(
     assert "Error: provider setup failed" in stderr
     assert not (run_dir / "voiceover").exists()
     assert not (run_dir / "voiceover.json").exists()
+
+
+def test_cli_storyboard_accepts_approved_run_with_voiceover_manifest(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "storyboard-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: Approved narration.",
+        encoding="utf-8",
+    )
+    (run_dir / "voiceover.json").write_text(
+        '{"provider_name": "fake", "segments": []}',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--storyboard", "storyboard-run"])
+
+    assert result == 0
+    stdout = capsys.readouterr().out
+    assert "Storyboard inputs ready for Production Run: storyboard-run" in stdout
+    assert "Storyboard generation placeholder complete." in stdout
+    assert not (run_dir / "STORYBOARD.md").exists()
+
+
+def test_cli_storyboard_rejects_draft_script_without_writing_artifact(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "draft-storyboard"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: draft\nLanguage: en\n\n## Segment 1\nNarration: Draft narration.",
+        encoding="utf-8",
+    )
+    (run_dir / "voiceover.json").write_text(
+        '{"provider_name": "fake", "segments": []}',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--storyboard", "draft-storyboard"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert "Error: Script is still draft." in stderr
+    assert not (run_dir / "STORYBOARD.md").exists()
+
+
+def test_cli_storyboard_rejects_missing_script_without_writing_artifact(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "missing-script-storyboard"
+    run_dir.mkdir(parents=True)
+    (run_dir / "voiceover.json").write_text(
+        '{"provider_name": "fake", "segments": []}',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--storyboard", "missing-script-storyboard"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert (
+        "Error: SCRIPT.md not found for Production Run: missing-script-storyboard"
+        in stderr
+    )
+    assert not (run_dir / "STORYBOARD.md").exists()
+
+
+def test_cli_storyboard_rejects_missing_voiceover_manifest_without_writing_artifact(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "missing-voiceover-storyboard"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: Approved narration.",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--storyboard", "missing-voiceover-storyboard"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert (
+        "Error: voiceover.json not found for Production Run: missing-voiceover-storyboard"
+        in stderr
+    )
+    assert not (run_dir / "STORYBOARD.md").exists()
