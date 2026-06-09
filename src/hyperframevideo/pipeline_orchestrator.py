@@ -59,6 +59,9 @@ class PipelineRunRequest:
     progress_format: str = "text"
     progress_writer: ProgressWriter | None = None
     visual_treatment: str = "tech-hype"
+    voice_name: str | None = None
+    emotion: str = "natural"
+    speed: float = 1.0
 
 
 @dataclass(slots=True)
@@ -107,7 +110,7 @@ class PipelineOrchestrator:
             ).is_approved:
                 return 0
 
-            self._ensure_voiceover(store, run, progress)
+            self._ensure_voiceover(store, run, request, progress)
             self._ensure_storyboard(store, run, progress)
             self._ensure_composition(store, run, progress)
             if request.render:
@@ -224,7 +227,11 @@ class PipelineOrchestrator:
                 return
 
     def _ensure_voiceover(
-        self, store: ProductionRunStore, run: ProductionRun, progress: "_ProgressReporter"
+        self,
+        store: ProductionRunStore,
+        run: ProductionRun,
+        request: PipelineRunRequest,
+        progress: "_ProgressReporter",
     ) -> None:
         if run.voiceover_manifest_path.exists():
             progress.emit(
@@ -239,9 +246,12 @@ class PipelineOrchestrator:
         script = run.script_path.read_text(encoding="utf-8")
         segments = VoiceoverNarrationExtractor().extract(script)
         audio_dir = store.create_voiceover_audio_dir(run)
-        outputs = (self.voiceover_provider or VieNeuVoiceoverProvider()).synthesize(
-            segments, audio_dir=audio_dir
+        provider = self.voiceover_provider or VieNeuVoiceoverProvider(
+            voice_name=request.voice_name,
+            emotion=request.emotion,
+            speed=request.speed,
         )
+        outputs = provider.synthesize(segments, audio_dir=audio_dir)
         store.write_voiceover_manifest(
             run,
             provider_name=outputs[0].provider_name if outputs else "unknown",

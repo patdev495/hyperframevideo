@@ -290,6 +290,9 @@ def test_cli_discovery_request_fails_gracefully_when_no_candidates_are_found(
 
 
 class FakeVoiceoverProvider:
+    def __init__(self, **kwargs) -> None:
+        self._kwargs = kwargs
+
     def synthesize(self, segments, audio_dir):
         audio_dir.mkdir(parents=True, exist_ok=True)
         outputs = []
@@ -311,6 +314,9 @@ class FakeVoiceoverProvider:
 
 
 class FailingVoiceoverProvider:
+    def __init__(self, **kwargs) -> None:
+        self._kwargs = kwargs
+
     def synthesize(self, segments, audio_dir):
         raise VoiceoverProviderError("provider setup failed")
 

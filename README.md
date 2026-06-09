@@ -33,8 +33,8 @@ uv run hyperframe-video run `
   --render
 
 uv run hyperframe-video run `
-  --url "https://techcrunch.com/2026/06/07/openai-is-still-working-on-that-super-app/"" `
-  --run-id tin-001 `
-  --language vi `
-  --treatment premium-news `
-  --auto-approve-script
+        --url "https://techcrunch.com/2026/06/07/openai-is-still-working-on-that-super-app/" `
+        --run-id demo-007 `
+        --language vi `
+        --auto-approve-script `
+   	--render

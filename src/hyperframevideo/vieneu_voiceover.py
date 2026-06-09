@@ -36,6 +36,8 @@ class VieNeuVoiceoverProvider:
     sdk_factory: Callable[..., Any] | None = None
     mode: str = "standard"
     voice_name: str | None = None
+    emotion: str = "natural"
+    speed: float = 1.0
     provider_name: str = "vieneu"
     sdk_options: dict[str, Any] = field(default_factory=dict)
 
@@ -48,14 +50,25 @@ class VieNeuVoiceoverProvider:
         if self.voice_name is not None:
             voice = tts.get_preset_voice(self.voice_name)
 
+        infer_kwargs: dict[str, Any] = {"emotion": self.emotion}
+        # Map speed (0.5-2.0) to silence_p for coarse pacing control:
+        #   speed 0.5 (slow) → silence_p 0.35 (more pauses)
+        #   speed 1.0 (normal) → silence_p 0.15 (default)
+        #   speed 1.5 (fast) → silence_p 0.04 (tighter)
+        clamped = max(0.5, min(2.0, self.speed))
+        infer_kwargs["silence_p"] = round(0.45 - clamped * 0.3, 2)
+
         outputs: list[VoiceoverOutput] = []
         try:
             for segment in segments:
                 audio_path = audio_dir / f"{segment.segment_id}.wav"
-                if voice is None:
-                    audio = tts.infer(text=segment.narration_text)
-                else:
-                    audio = tts.infer(text=segment.narration_text, voice=voice)
+                kwargs: dict[str, Any] = {
+                    "text": segment.narration_text,
+                    **infer_kwargs,
+                }
+                if voice is not None:
+                    kwargs["voice"] = voice
+                audio = tts.infer(**kwargs)
                 tts.save(audio, str(audio_path))
                 outputs.append(
                     VoiceoverOutput(
@@ -104,6 +117,8 @@ class VieNeuVoiceoverProvider:
         return {
             "mode": self.mode,
             "voice_name": self.voice_name or "default",
+            "emotion": self.emotion,
+            "speed": str(self.speed),
         }
 
     def _wav_duration_seconds(self, audio_path: Path) -> float:

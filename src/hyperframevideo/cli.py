@@ -71,6 +71,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="List available Visual Treatments and exit.",
     )
     parser.add_argument(
+        "--list-voices",
+        action="store_true",
+        help="List available TTS voices and exit.",
+    )
+    parser.add_argument(
         "url",
         nargs="?",
         help="The source URL to process.",
@@ -88,6 +93,22 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=5,
         help="The number of discovery candidates to show.",
+    )
+    parser.add_argument(
+        "--voice",
+        default=None,
+        help="Voice name for TTS. Use --list-voices to see available options.",
+    )
+    parser.add_argument(
+        "--emotion",
+        default="natural",
+        help="Emotion for TTS voice (default: natural).",
+    )
+    parser.add_argument(
+        "--speed",
+        type=float,
+        default=1.0,
+        help="Speech speed factor (0.5-2.0, default: 1.0).",
     )
     parser.add_argument(
         "--voiceover",
@@ -158,6 +179,22 @@ def build_run_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--voice",
+        default=None,
+        help="Voice name for TTS. Use --list-voices to see available options.",
+    )
+    parser.add_argument(
+        "--emotion",
+        default="natural",
+        help="Emotion for TTS voice (default: natural).",
+    )
+    parser.add_argument(
+        "--speed",
+        type=float,
+        default=1.0,
+        help="Speech speed factor (0.5-2.0, default: 1.0).",
+    )
+    parser.add_argument(
         "--progress-format",
         choices=("text", "jsonl"),
         default="text",
@@ -185,6 +222,9 @@ def _run_orchestrated(argv: list[str]) -> int:
             progress_format=args.progress_format,
             progress_writer=write_progress,
             visual_treatment=args.treatment or "tech-hype",
+            voice_name=args.voice,
+            emotion=args.emotion,
+            speed=args.speed,
         )
     )
 
@@ -213,6 +253,27 @@ def main(argv: list[str] | None = None) -> int:
         print("Available Visual Treatments:")
         for name in names:
             print(f"  - {name}")
+        return 0
+
+    if args.list_voices:
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+        try:
+            from vieneu import Vieneu
+            tts = Vieneu(mode="standard")
+            voices = tts.list_preset_voices()
+            print("Available TTS Voices:")
+            for display_name, voice_name in voices:
+                print(f"  {voice_name:20s} {display_name}")
+        except ImportError:
+            print(
+                "VieNeu SDK is not installed. "
+                "Install it before listing voices.",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     if args.url and args.discover:
@@ -533,7 +594,11 @@ def main(argv: list[str] | None = None) -> int:
 
         audio_dir = store.create_voiceover_audio_dir(run)
         try:
-            outputs = VieNeuVoiceoverProvider().synthesize(segments, audio_dir=audio_dir)
+            outputs = VieNeuVoiceoverProvider(
+                voice_name=args.voice,
+                emotion=args.emotion,
+                speed=args.speed,
+            ).synthesize(segments, audio_dir=audio_dir)
         except VoiceoverProviderError as error:
             if audio_dir.exists() and not any(audio_dir.iterdir()):
                 shutil.rmtree(audio_dir)

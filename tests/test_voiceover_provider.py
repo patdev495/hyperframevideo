@@ -18,9 +18,10 @@ class FakeVieNeuTts:
         self.requested_voice_names: list[str] = []
         self.closed = False
 
-    def infer(self, *, text: str, voice=None):
+    def infer(self, *, text: str, voice=None, **kwargs):
         self.inferred_texts.append(text)
         self.inferred_voices.append(voice)
+        self._last_infer_kwargs = kwargs
         return text.encode("utf-8")
 
     def get_preset_voice(self, voice_name: str):
@@ -96,6 +97,8 @@ def test_vieneu_provider_records_selected_voice_configuration(
     assert outputs[0].voice_config == {
         "mode": "standard",
         "voice_name": "female_north",
+        "emotion": "natural",
+        "speed": "1.0",
     }
 
 
