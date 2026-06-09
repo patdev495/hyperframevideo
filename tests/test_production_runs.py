@@ -162,6 +162,54 @@ def test_write_storyboard_writes_markdown_without_affecting_other_files(
     )
 
 
+def test_composition_dir_is_under_run_directory(tmp_path: Path) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="compose-run")
+
+    assert run.composition_dir == run.directory / "composition"
+
+
+def test_render_output_path_is_under_run_directory(tmp_path: Path) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="render-run")
+
+    assert run.render_output_path == run.directory / "output.mp4"
+
+
+def test_write_composition_html_writes_without_affecting_other_files(
+    tmp_path: Path,
+) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="compose-run")
+    run.script_path.write_text("Status: approved\n", encoding="utf-8")
+    run.voiceover_manifest_path.write_text('{"provider_name":"x","segments":[]}', encoding="utf-8")
+    run.storyboard_path.write_text("# Storyboard\n\nScene 1.", encoding="utf-8")
+
+    store.write_composition_html(
+        run, html_content='<div id="stage">Scene 1</div>'
+    )
+
+    index_path = run.composition_dir / "index.html"
+    assert index_path.read_text(encoding="utf-8") == '<div id="stage">Scene 1</div>'
+    assert index_path.is_file()
+    # Other files are untouched
+    assert run.script_path.read_text(encoding="utf-8") == "Status: approved\n"
+    assert run.voiceover_manifest_path.read_text(encoding="utf-8") == (
+        '{"provider_name":"x","segments":[]}'
+    )
+    assert run.storyboard_path.read_text(encoding="utf-8") == "# Storyboard\n\nScene 1."
+
+
+def test_write_composition_html_creates_composition_dir(tmp_path: Path) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="compose-run")
+
+    store.write_composition_html(run, html_content="<html></html>")
+
+    assert run.composition_dir.is_dir()
+    assert (run.composition_dir / "index.html").is_file()
+
+
 def test_write_voiceover_manifest_records_provider_and_relative_audio_paths(
     tmp_path: Path,
 ) -> None:

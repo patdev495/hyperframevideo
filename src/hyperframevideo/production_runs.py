@@ -56,6 +56,14 @@ class ProductionRun:
     def storyboard_path(self) -> Path:
         return self.directory / "STORYBOARD.md"
 
+    @property
+    def composition_dir(self) -> Path:
+        return self.directory / "composition"
+
+    @property
+    def render_output_path(self) -> Path:
+        return self.directory / "output.mp4"
+
 
 @dataclass(frozen=True, slots=True)
 class ProductionRunStore:
@@ -105,6 +113,14 @@ class ProductionRunStore:
         self, run: ProductionRun, storyboard_markdown: str
     ) -> None:
         run.storyboard_path.write_text(storyboard_markdown, encoding="utf-8")
+
+    def write_composition_html(
+        self, run: ProductionRun, html_content: str
+    ) -> None:
+        run.composition_dir.mkdir(parents=True, exist_ok=True)
+        (run.composition_dir / "index.html").write_text(
+            html_content, encoding="utf-8"
+        )
 
     def write_voiceover_manifest(
         self,
