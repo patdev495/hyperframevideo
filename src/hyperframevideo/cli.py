@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import shutil
 import sys
 
 from hyperframevideo import __version__
@@ -107,7 +108,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Error: {error}", file=sys.stderr)
             return 1
 
-        if run.voiceover_manifest_path.exists() or run.voiceover_audio_dir.exists():
+        if run.voiceover_manifest_path.exists() or (
+            run.voiceover_audio_dir.exists()
+            and any(run.voiceover_audio_dir.iterdir())
+        ):
             print(
                 f"Error: Voiceover artifacts already exist for Production Run: {args.voiceover}",
                 file=sys.stderr,
@@ -118,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
         try:
             outputs = VieNeuVoiceoverProvider().synthesize(segments, audio_dir=audio_dir)
         except VoiceoverProviderError as error:
+            if audio_dir.exists() and not any(audio_dir.iterdir()):
+                shutil.rmtree(audio_dir)
             print(f"Error: {error}", file=sys.stderr)
             return 1
 
@@ -210,7 +216,6 @@ def main(argv: list[str] | None = None) -> int:
 
     except Exception as e:
         if run is not None and run.directory.exists():
-            import shutil
             shutil.rmtree(run.directory)
         print(f"Error: {e}", file=sys.stderr)
         return 1

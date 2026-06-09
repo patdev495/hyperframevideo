@@ -35,6 +35,39 @@ On-screen text: Second caption.
     ]
 
 
+def test_voiceover_narration_extractor_accepts_multiline_narration_blocks() -> None:
+    script = """
+Status: approved
+Language: vi
+
+# Source-Grounded Script
+
+## Segment 1
+Narration:
+Dong mo dau.
+Dong tiep theo.
+
+On-screen text:
+Caption.
+
+## Segment 2
+Narration:
+Doan thu hai.
+
+Purpose:
+Explain the next point.
+"""
+
+    segments = VoiceoverNarrationExtractor().extract(script)
+
+    assert [segment.segment_id for segment in segments] == [
+        "segment-001",
+        "segment-002",
+    ]
+    assert segments[0].narration_text == "Dong mo dau.\nDong tiep theo."
+    assert segments[1].narration_text == "Doan thu hai."
+
+
 def test_voiceover_narration_extractor_rejects_script_without_narration() -> None:
     script = """
 Status: approved

@@ -5,7 +5,7 @@ import sys
 from io import StringIO
 
 from hyperframevideo import cli
-from hyperframevideo.vieneu_voiceover import VoiceoverOutput
+from hyperframevideo.vieneu_voiceover import VoiceoverOutput, VoiceoverProviderError
 
 
 def test_cli_version_reports_package_version() -> None:
@@ -309,6 +309,11 @@ class FakeVoiceoverProvider:
         return outputs
 
 
+class FailingVoiceoverProvider:
+    def synthesize(self, segments, audio_dir):
+        raise VoiceoverProviderError("provider setup failed")
+
+
 def test_cli_voiceover_generates_manifest_and_audio_files_for_approved_run(
     tmp_path: "pathlib.Path", monkeypatch, capsys
 ) -> None:
@@ -445,3 +450,44 @@ def test_cli_voiceover_rejects_rerun_when_artifacts_already_exist(
         "Error: Voiceover artifacts already exist for Production Run: rerun-voiceover"
         in stderr
     )
+
+
+def test_cli_voiceover_allows_retry_after_empty_audio_dir_from_failed_setup(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "retry-voiceover"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: Approved narration.",
+        encoding="utf-8",
+    )
+    (run_dir / "voiceover").mkdir()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "VieNeuVoiceoverProvider", FakeVoiceoverProvider)
+
+    result = cli.main(["--voiceover", "retry-voiceover"])
+
+    assert result == 0
+    assert (run_dir / "voiceover.json").is_file()
+    assert (run_dir / "voiceover" / "segment-001.wav").is_file()
+
+
+def test_cli_voiceover_cleans_empty_audio_dir_after_provider_setup_failure(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "provider-failure"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: Approved narration.",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "VieNeuVoiceoverProvider", FailingVoiceoverProvider)
+
+    result = cli.main(["--voiceover", "provider-failure"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert "Error: provider setup failed" in stderr
+    assert not (run_dir / "voiceover").exists()
+    assert not (run_dir / "voiceover.json").exists()
