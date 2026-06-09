@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Generate Selected Story and draft SCRIPT.md artifacts
 

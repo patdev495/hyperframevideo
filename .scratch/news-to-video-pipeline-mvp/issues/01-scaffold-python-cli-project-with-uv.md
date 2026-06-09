@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Scaffold Python CLI project with uv
 

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Extract Direct Source content with Readability-first fallback path
 

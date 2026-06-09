@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Build Source Evidence from extracted content
 
