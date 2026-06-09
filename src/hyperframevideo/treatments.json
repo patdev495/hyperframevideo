@@ -10,6 +10,17 @@
       "body_font_size": "24px",
       "fade_in_duration": 0.5,
       "slide_up_duration": 0.6
+    },
+    {
+      "name": "premium-news",
+      "background_color": "#050816",
+      "text_color": "#f8fafc",
+      "accent_color": "#38bdf8",
+      "font_family": "Inter, sans-serif",
+      "title_font_size": "72px",
+      "body_font_size": "38px",
+      "fade_in_duration": 0.45,
+      "slide_up_duration": 0.7
     }
   ]
 }

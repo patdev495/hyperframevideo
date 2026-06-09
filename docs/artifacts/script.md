@@ -8,7 +8,7 @@
 Status: draft
 Language: en
 Target Duration: 60-90 seconds
-Visual Treatment: ai-modern
+Visual Treatment: premium-news
 
 # Title
 

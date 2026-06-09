@@ -68,6 +68,30 @@ Explain the next point.
     assert segments[1].narration_text == "Doan thu hai."
 
 
+def test_voiceover_narration_extractor_accepts_markdown_bold_field_labels() -> None:
+    script = """
+**Status:** approved
+**Language:** en
+
+# Source-Grounded Script
+
+## Segment 1
+**Narration:** First spoken line.
+**On-screen text:** First caption.
+
+## Segment 2
+**Narration:** Second spoken line.
+**On-screen text:** Second caption.
+"""
+
+    segments = VoiceoverNarrationExtractor().extract(script)
+
+    assert [segment.narration_text for segment in segments] == [
+        "First spoken line.",
+        "Second spoken line.",
+    ]
+
+
 def test_voiceover_narration_extractor_rejects_script_without_narration() -> None:
     script = """
 Status: approved

@@ -11,6 +11,9 @@ Before running composition generation, the Production Run must have:
 - `SCRIPT.md` with `Status: approved` in its header.
 - `voiceover.json` written by the Voiceover Provider phase.
 - `STORYBOARD.md` written by the Storyboard phase.
+- For `premium-news`, `karaoke-captions.json` may already exist. If it does not,
+  the compose command creates approximate **Karaoke Caption** timing from
+  `voiceover.json`.
 
 ## 1. Generate Composition
 
@@ -23,12 +26,13 @@ hyperframe-video --compose <run-id>
 The command:
 
 1. Reads and validates `SCRIPT.md`, `voiceover.json`, and `STORYBOARD.md`.
-2. Loads the **Visual Treatment** from the `STORYBOARD.md` header (defaults to `ai-modern`).
+2. Loads the **Visual Treatment** from the `STORYBOARD.md` header (defaults to `premium-news` for new scripts).
 3. Loads treatment parameters from the bundled `treatments.json` config.
 4. Extracts script scenes and voiceover timing, then aligns them by segment ID.
-5. Generates `composition/index.html` with data-timed scenes, audio tracks, and a GSAP animation timeline.
-6. Copies voiceover WAV files to `composition/voiceover/`.
-7. Fails with a readable diagnostic if `composition/` already exists, or if any prerequisite is missing.
+5. For `premium-news`, reads or creates `karaoke-captions.json`.
+6. Generates `composition/index.html` with data-timed scenes, audio tracks, and a GSAP animation timeline.
+7. Copies voiceover WAV files to `composition/voiceover/`.
+8. Fails with a readable diagnostic if `composition/` already exists, or if any prerequisite is missing.
 
 On success, the Production Run contains:
 
@@ -38,6 +42,7 @@ On success, the Production Run contains:
 |-- voiceover.json
 |-- voiceover/
 |-- STORYBOARD.md
+|-- karaoke-captions.json    # premium-news only, approximate timing by default
 `-- composition/
     |-- index.html
     `-- voiceover/
@@ -91,6 +96,24 @@ Visual Treatments are defined in `src/hyperframevideo/treatments.json`. Each tre
 
 To add a new treatment, add a new entry to the `treatments` array in `treatments.json` and reference it from the `STORYBOARD.md` header.
 
+## Premium News and Karaoke Captions
+
+The `premium-news` **Visual Treatment** uses deterministic HTML/CSS/GSAP
+background layers, scene transitions, and **Karaoke Caption** overlays. The
+caption overlay shows a short phrase window and highlights the active token
+instead of showing the full narration body.
+
+The first timing provider is approximate: it splits narration text into caption
+tokens and distributes the segment duration from `voiceover.json` across those
+tokens. This keeps the pipeline local-first and usable without GPU-heavy
+alignment dependencies.
+
+The caption timing contract is provider-neutral. A future Whisper-based provider
+can write precise word timestamps into the same `karaoke-captions.json` artifact
+without changing the **HyperFrames Composition** renderer. The installed
+`vieneu 3.0.4` SDK currently exposes waveform generation and saving, but not a
+public word timestamp API.
+
 ## Scope Boundary
 
-This phase does **not** include B-roll search, image generation, asset downloads, presenter avatars, lip sync, captions rendering, audio mixing, cloud rendering, or web UI controls. It produces only the composition and rendered video from the existing Production Run artifacts.
+This phase does **not** include B-roll search, image generation, asset downloads, presenter avatars, lip sync, precise Whisper alignment, audio mixing, cloud rendering, or web UI controls. It produces only the composition and rendered video from the existing Production Run artifacts.

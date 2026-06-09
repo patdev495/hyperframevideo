@@ -59,6 +59,30 @@ On-screen text: Second screen.
     assert scenes[1].on_screen_text == "Second screen."
 
 
+def test_extractor_accepts_markdown_bold_field_labels() -> None:
+    script_markdown = """**Status:** approved
+**Language:** en
+
+## Segment 1
+
+**Narration:** First narration.
+
+**On-screen text:** First screen.
+
+**Purpose:** Explain first point.
+
+**Facts used:**
+- Fact one.
+"""
+
+    scenes = ScriptStoryboardExtractor().extract(script_markdown)
+
+    assert scenes[0].narration_text == "First narration."
+    assert scenes[0].on_screen_text == "First screen."
+    assert scenes[0].purpose == "Explain first point."
+    assert scenes[0].facts_used == "- Fact one."
+
+
 def test_extractor_parses_multiline_narration() -> None:
     script_markdown = """Status: approved
 

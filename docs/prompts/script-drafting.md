@@ -17,14 +17,14 @@ Video constraints:
 - Format: vertical short video
 - Target duration: 60-90 seconds
 - Hard cap: 5 minutes
-- Visual Treatment: ai-modern unless told otherwise
+- Visual Treatment: premium-news unless told otherwise
 
 SCRIPT.md format:
 
 Status: draft
 Language: en
 Target Duration: 60-90 seconds
-Visual Treatment: ai-modern
+Visual Treatment: premium-news
 
 # Title
 

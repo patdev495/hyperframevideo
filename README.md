@@ -22,3 +22,12 @@ uv run hyperframe-video --help
 Implement .scratch/news-to-video-pipeline-mvp/issues/07-wire-direct-source-to-draft-cli-flow.md
 
 uv run hyperframe-video --run-id manual-test-01 "https://techcrunch.com/2026/06/07/notion-restores-access-to-anthropic-after-service-disruption/"
+
+
+
+uv run hyperframe-video run `
+  --url "https://techcrunch.com/2026/06/07/openai-is-still-working-on-that-super-app/" `
+  --run-id demo-003 `
+  --script-provider deepseek `
+  --auto-approve-script `
+  --render

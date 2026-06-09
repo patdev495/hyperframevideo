@@ -59,9 +59,13 @@ temp/
 *.aac
 *.mp3
 *.m4a
+*.ps1
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Codegraph index metadata
+.codegraph/
 
 # Local environment
 .env

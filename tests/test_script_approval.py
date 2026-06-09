@@ -38,3 +38,10 @@ def test_script_approval_gate_supports_status_case_and_spacing() -> None:
 
     assert result.is_approved is True
     assert result.status == "approved"
+
+
+def test_script_approval_gate_accepts_markdown_bold_status_label() -> None:
+    result = ScriptApprovalGate().evaluate("**Status:** approved\n**Language:** en\n")
+
+    assert result.is_approved is True
+    assert result.status == "approved"

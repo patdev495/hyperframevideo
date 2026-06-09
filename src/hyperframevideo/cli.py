@@ -12,8 +12,13 @@ from pathlib import Path
 from hyperframevideo import __version__
 from hyperframevideo.candidate_selector import CandidateSelector
 from hyperframevideo.discovery_engine import DiscoveryEngine
+from hyperframevideo.karaoke_captions import ApproximateKaraokeCaptionProvider
 from hyperframevideo.models import DirectSourceRequest, DiscoveryRequest, NewsCandidate
 from hyperframevideo.news_candidate_builder import NewsCandidateBuilder
+from hyperframevideo.pipeline_orchestrator import (
+    PipelineOrchestrator,
+    PipelineRunRequest,
+)
 from hyperframevideo.production_runs import (
     ProductionRun,
     ProductionRunStore,
@@ -40,6 +45,14 @@ from hyperframevideo.vieneu_voiceover import (
     VieNeuVoiceoverProvider,
     VoiceoverProviderError,
 )
+
+
+def _visual_treatment_from_markdown(markdown: str, default: str = "ai-modern") -> str:
+    for line in markdown.splitlines():
+        if line.startswith("Visual Treatment:"):
+            value = line.split(":", 1)[1].strip()
+            return value or default
+    return default
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -94,7 +107,80 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_run_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="hyperframe-video run",
+        description="Run the orchestrated News-to-Video pipeline.",
+    )
+    parser.add_argument("--url", required=True, help="The source URL to process.")
+    parser.add_argument(
+        "--run-id",
+        required=True,
+        help="The ID for the production run to create or resume.",
+    )
+    parser.add_argument(
+        "--script-provider",
+        default="deepseek",
+        choices=("deepseek",),
+        help="The Source-Grounded Script drafting provider.",
+    )
+    parser.add_argument(
+        "--language",
+        default="en",
+        choices=("en", "vi"),
+        help="The language code for generated SCRIPT.md content.",
+    )
+    parser.add_argument(
+        "--script-model",
+        help="Override the script provider model.",
+    )
+    parser.add_argument(
+        "--auto-approve-script",
+        action="store_true",
+        help="Approve a newly drafted script and continue through composition.",
+    )
+    parser.add_argument(
+        "--render",
+        action="store_true",
+        help="Render output.mp4 after composition.",
+    )
+    parser.add_argument(
+        "--progress-format",
+        choices=("text", "jsonl"),
+        default="text",
+        help="How to print live progress.",
+    )
+    return parser
+
+
+def _run_orchestrated(argv: list[str]) -> int:
+    parser = build_run_parser()
+    args = parser.parse_args(argv)
+
+    def write_progress(line: str) -> None:
+        print(line)
+
+    return PipelineOrchestrator().run(
+        PipelineRunRequest(
+            url=args.url,
+            run_id=args.run_id,
+            language=args.language,
+            script_provider=args.script_provider,
+            script_model=args.script_model,
+            auto_approve_script=args.auto_approve_script,
+            render=args.render,
+            progress_format=args.progress_format,
+            progress_writer=write_progress,
+        )
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+    if argv and argv[0] == "run":
+        return _run_orchestrated(argv[1:])
+
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -173,7 +259,7 @@ def main(argv: list[str] | None = None) -> int:
         markdown = StoryboardMarkdownGenerator().generate(
             planned_scenes,
             run_id=args.storyboard,
-            visual_treatment="ai-modern",
+            visual_treatment=_visual_treatment_from_markdown(script_markdown),
         )
 
         store.write_storyboard(run, markdown)
@@ -252,11 +338,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # Read visual treatment from STORYBOARD.md header
         storyboard_content = run.storyboard_path.read_text(encoding="utf-8")
-        visual_treatment = "ai-modern"
-        for line in storyboard_content.splitlines():
-            if line.startswith("Visual Treatment:"):
-                visual_treatment = line.split(":", 1)[1].strip()
-                break
+        visual_treatment = _visual_treatment_from_markdown(storyboard_content)
 
         # Load treatment config
         treatments_path = (
@@ -270,11 +352,26 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Error: {error}", file=sys.stderr)
             return 1
 
+        karaoke_captions = store.read_karaoke_captions(run)
+        if visual_treatment == "premium-news" and karaoke_captions is None:
+            karaoke_captions = ApproximateKaraokeCaptionProvider().generate_manifest(
+                tuple(
+                    (
+                        entry.segment_id,
+                        entry.narration_text,
+                        entry.duration_seconds,
+                    )
+                    for entry in timing_entries
+                )
+            )
+            store.write_karaoke_captions(run, karaoke_captions)
+
         # Generate composition HTML
         html = CompositionGenerator().generate(
             planned_scenes,
             treatment,
             run_id=args.compose,
+            karaoke_captions=karaoke_captions,
         )
         store.write_composition_html(run, html)
 
@@ -330,11 +427,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         # Run npx hyperframes render in composition directory
+        # Use shell=True on Windows so .cmd files (npx.cmd) are resolved
         result = subprocess.run(
-            ["npx", "hyperframes", "render"],
+            "npx hyperframes render",
             cwd=str(run.composition_dir),
             capture_output=True,
             text=True,
+            shell=True,
         )
 
         if result.returncode != 0:
@@ -345,8 +444,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         # Copy generated MP4 to run directory
-        generated_mp4 = run.composition_dir / "output.mp4"
-        if generated_mp4.exists():
+        # HyperFrames outputs to renders/composition_<timestamp>.mp4 by default
+        renders_dir = run.composition_dir / "renders"
+        generated_mp4: Path | None = None
+        if renders_dir.is_dir():
+            mp4_files = sorted(renders_dir.glob("*.mp4"), key=lambda p: p.stat().st_mtime, reverse=True)
+            if mp4_files:
+                generated_mp4 = mp4_files[0]
+
+        if generated_mp4 is not None and generated_mp4.exists():
             shutil.copy2(generated_mp4, run.render_output_path)
             print(f"Video rendered to: {run.render_output_path}")
             print("Next Step: View the video or run the pipeline for another source.")

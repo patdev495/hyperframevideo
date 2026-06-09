@@ -27,7 +27,7 @@ def test_story_artifact_generator_creates_selected_story_and_draft_script() -> N
     script = artifacts.script_markdown
     assert script.startswith("Status: draft\nLanguage: en\n")
     assert "Target Duration: 60-90 seconds" in script
-    assert "Visual Treatment: ai-modern" in script
+    assert "Visual Treatment: premium-news" in script
     assert "# Title" in script
     assert "# Hook" in script
     assert "# Source-Grounded Script" in script

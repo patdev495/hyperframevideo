@@ -555,6 +555,47 @@ def test_cli_storyboard_accepts_approved_run_with_voiceover_manifest(
     assert "voiceover/segment-002.wav" in storyboard
 
 
+def test_cli_storyboard_preserves_script_visual_treatment(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "premium-storyboard"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        (
+            "Status: approved\n"
+            "Language: en\n"
+            "Visual Treatment: premium-news\n\n"
+            "## Segment 1\n"
+            "Narration: Premium narration.\n"
+            "On-screen text: Premium screen."
+        ),
+        encoding="utf-8",
+    )
+    (run_dir / "voiceover.json").write_text(
+        json.dumps({
+            "provider_name": "fake",
+            "segments": [
+                {
+                    "segment_id": "segment-001",
+                    "order": 1,
+                    "narration_text": "Premium narration.",
+                    "audio_path": "voiceover/segment-001.wav",
+                    "duration_seconds": 1.5,
+                    "warnings": [],
+                },
+            ],
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--storyboard", "premium-storyboard"])
+
+    assert result == 0
+    storyboard = (run_dir / "STORYBOARD.md").read_text(encoding="utf-8")
+    assert "Visual Treatment: premium-news" in storyboard
+
+
 def test_cli_storyboard_rejects_rerun_when_storyboard_already_exists(
     tmp_path: "pathlib.Path", monkeypatch, capsys
 ) -> None:
@@ -661,7 +702,7 @@ class TestCliCompose:
     """--compose generates composition/index.html from an approved run."""
 
     def _create_approved_run_with_storyboard(
-        self, tmp_path: pathlib.Path, run_name: str
+        self, tmp_path: pathlib.Path, run_name: str, visual_treatment: str = "ai-modern"
     ) -> pathlib.Path:
         run_dir = tmp_path / ".runs" / run_name
         run_dir.mkdir(parents=True)
@@ -682,7 +723,7 @@ class TestCliCompose:
         (run_dir / "voiceover").mkdir(parents=True)
         (run_dir / "voiceover" / "segment-001.wav").write_bytes(b"fake audio")
         (run_dir / "STORYBOARD.md").write_text(
-            "# Storyboard\n\nRun ID: test-run\nVisual Treatment: ai-modern\n\n## Scene 1\n",
+            f"# Storyboard\n\nRun ID: test-run\nVisual Treatment: {visual_treatment}\n\n## Scene 1\n",
             encoding="utf-8",
         )
         return run_dir
@@ -703,6 +744,28 @@ class TestCliCompose:
         assert "First approved narration." in html
         audio_dest = tmp_path / ".runs" / "compose-run" / "composition" / "voiceover" / "segment-001.wav"
         assert audio_dest.is_file()
+
+    def test_compose_premium_news_creates_karaoke_caption_artifact_and_html(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        monkeypatch.chdir(tmp_path)
+        run_dir = self._create_approved_run_with_storyboard(
+            tmp_path, "premium-compose", visual_treatment="premium-news"
+        )
+
+        result = cli.main(["--compose", "premium-compose"])
+
+        assert result == 0
+        captions_path = run_dir / "karaoke-captions.json"
+        assert captions_path.is_file()
+        captions = json.loads(captions_path.read_text(encoding="utf-8"))
+        assert captions["timing_source"] == "approximate"
+        assert captions["segments"][0]["segment_id"] == "segment-001"
+        index_path = run_dir / "composition" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        assert 'data-visual-treatment="premium-news"' in html
+        assert "premium-bg-layer" in html
+        assert "karaoke-caption" in html
 
     def test_compose_rejects_missing_storyboard(self, tmp_path, monkeypatch, capsys):
         run_dir = tmp_path / ".runs" / "no-storyboard"
@@ -768,9 +831,11 @@ class TestCliRender:
 
         def fake_run(*args, **kwargs):
             calls.append(args)
-            # Create a fake output.mp4 in the cwd
+            # HyperFrames outputs to renders/composition_<timestamp>.mp4
             dest_dir = tmp_path / ".runs" / "render-run" / "composition"
-            (dest_dir / "output.mp4").write_bytes(b"fake mp4")
+            renders_dir = dest_dir / "renders"
+            renders_dir.mkdir(exist_ok=True)
+            (renders_dir / "composition_2026-06-09_12-00-00.mp4").write_bytes(b"fake mp4")
             return subprocess.CompletedProcess(args[0], 0, b"", b"")
 
         monkeypatch.setattr(subprocess, "run", fake_run)

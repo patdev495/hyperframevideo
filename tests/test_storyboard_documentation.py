@@ -35,7 +35,7 @@ def test_storyboard_workflow_documentation_covers_cli_and_artifact_contract() ->
 
     # Artifact contract covers rules
     assert "already exists" in artifact_contract
-    assert "ai-modern" in artifact_contract
+    assert "premium-news" in artifact_contract
     assert "relative to the Production Run" in artifact_contract
 
     # Artifact contract covers scope boundary

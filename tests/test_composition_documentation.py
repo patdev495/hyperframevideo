@@ -26,6 +26,11 @@ def test_composition_workflow_documentation_covers_cli_and_artifact_contract() -
     # Workflow explains treatments config
     assert "treatments.json" in workflow
     assert "background_color" in workflow
+    assert "premium-news" in workflow
+    assert "karaoke-captions.json" in workflow
+    assert "approximate" in workflow
+    assert "Whisper" in workflow
+    assert "vieneu 3.0.4" in workflow
 
     # Workflow covers scope boundary
     assert "does **not**" in workflow
@@ -37,6 +42,9 @@ def test_composition_workflow_documentation_covers_cli_and_artifact_contract() -
     assert "data-duration" in artifact_contract
     assert "data-track-index" in artifact_contract
     assert "GSAP" in artifact_contract
+    assert "premium-news" in artifact_contract
+    assert "Karaoke Caption" in artifact_contract
+    assert "Whisper" in artifact_contract
 
     # Artifact contract covers layout
     assert "composition/index.html" in artifact_contract

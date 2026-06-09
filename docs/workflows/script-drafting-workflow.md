@@ -4,6 +4,8 @@ The News-to-Video Pipeline uses a portable, bring-your-own-AI approach for draft
 
 This guide explains how to generate a `SCRIPT.md` artifact from source evidence.
 
+For the integrated DeepSeek-backed workflow, see [Pipeline Orchestrator Workflow](pipeline-orchestrator.md). The same boundary applies in both workflows: AI tools may only produce or repair **Source-Grounded Script** content, not storyboard, composition, voiceover, or render artifacts.
+
 ## 1. Locate Source Evidence
 
 When you run the `hyperframe-video` CLI against a news URL, it creates a new Production Run directory under `.runs/<run-id>/`. Inside this directory, you will find a `source-evidence.json` file.

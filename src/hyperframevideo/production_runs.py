@@ -5,6 +5,10 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Sequence
 
+from hyperframevideo.karaoke_captions import (
+    KaraokeCaptionLoader,
+    KaraokeCaptionManifest,
+)
 from hyperframevideo.models import NewsCandidate
 from hyperframevideo.story_artifacts import StoryArtifacts
 
@@ -53,6 +57,10 @@ class ProductionRun:
         return self.directory / "voiceover"
 
     @property
+    def karaoke_captions_path(self) -> Path:
+        return self.directory / "karaoke-captions.json"
+
+    @property
     def storyboard_path(self) -> Path:
         return self.directory / "STORYBOARD.md"
 
@@ -63,6 +71,10 @@ class ProductionRun:
     @property
     def render_output_path(self) -> Path:
         return self.directory / "output.mp4"
+
+    @property
+    def progress_log_path(self) -> Path:
+        return self.directory / "progress.jsonl"
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,3 +157,18 @@ class ProductionRunStore:
         run.voiceover_manifest_path.write_text(
             json.dumps(payload, indent=2), encoding="utf-8"
         )
+
+    def write_karaoke_captions(
+        self, run: ProductionRun, manifest: KaraokeCaptionManifest
+    ) -> None:
+        run.karaoke_captions_path.write_text(manifest.to_json(), encoding="utf-8")
+
+    def read_karaoke_captions(
+        self, run: ProductionRun
+    ) -> KaraokeCaptionManifest | None:
+        try:
+            manifest_json = run.karaoke_captions_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return None
+
+        return KaraokeCaptionLoader().load(manifest_json)

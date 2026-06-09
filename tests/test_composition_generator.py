@@ -1,6 +1,11 @@
 from hyperframevideo.storyboard_planning import StoryboardScene
 from hyperframevideo.treatment_config import TreatmentConfig
 from hyperframevideo.composition_generator import CompositionGenerator
+from hyperframevideo.karaoke_captions import (
+    KaraokeCaptionManifest,
+    KaraokeCaptionSegment,
+    KaraokeCaptionToken,
+)
 
 
 class TestCompositionGenerator:
@@ -42,6 +47,7 @@ class TestCompositionGenerator:
         assert 'data-width="1080"' in result
         assert 'data-height="1920"' in result
         # Scene with data attributes
+        assert 'class="clip scene"' in result
         assert 'data-start="0.0"' in result or 'data-start="0"' in result
         assert 'data-duration="1.5"' in result
         assert 'data-track-index="0"' in result
@@ -49,6 +55,7 @@ class TestCompositionGenerator:
         assert "First narration." in result
         assert "First screen." in result
         # Audio
+        assert 'id="audio-segment-001"' in result
         assert "voiceover/segment-001.wav" in result
         # Treatment CSS
         assert "#0f172a" in result
@@ -162,3 +169,79 @@ class TestCompositionGenerator:
         assert "Only narration." in result
         assert '<h2 class="title">' not in result
         assert '<p class="body">Only narration.</p>' in result
+
+    def test_premium_news_generates_background_transitions_and_karaoke_captions(self) -> None:
+        scenes = [
+            StoryboardScene(
+                order=1,
+                segment_id="segment-001",
+                start_time_seconds=0.0,
+                duration_seconds=2.0,
+                audio_path="voiceover/segment-001.wav",
+                narration_text="OpenAI builds ChatGPT.",
+                on_screen_text="ChatGPT Super App",
+                purpose="Hook",
+                facts_used=None,
+            ),
+        ]
+        treatment = TreatmentConfig(
+            name="premium-news",
+            background_color="#050816",
+            text_color="#f8fafc",
+            accent_color="#38bdf8",
+            font_family="Inter, sans-serif",
+            title_font_size="72px",
+            body_font_size="38px",
+            fade_in_duration=0.45,
+            slide_up_duration=0.7,
+        )
+        captions = KaraokeCaptionManifest(
+            timing_source="test-double",
+            segments=(
+                KaraokeCaptionSegment(
+                    segment_id="segment-001",
+                    tokens=(
+                        KaraokeCaptionToken(
+                            order=1,
+                            text="OpenAI",
+                            start_seconds=0.0,
+                            end_seconds=0.6,
+                        ),
+                        KaraokeCaptionToken(
+                            order=2,
+                            text="builds",
+                            start_seconds=0.6,
+                            end_seconds=1.2,
+                        ),
+                        KaraokeCaptionToken(
+                            order=3,
+                            text="ChatGPT",
+                            start_seconds=1.2,
+                            end_seconds=2.0,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        result = CompositionGenerator().generate(
+            scenes,
+            treatment,
+            run_id="premium-run",
+            karaoke_captions=captions,
+        )
+
+        assert 'data-visual-treatment="premium-news"' in result
+        assert 'class="clip scene premium-scene"' in result
+        assert "premium-bg-layer" in result
+        assert "premium-transition" in result
+        assert "karaoke-caption" in result
+        assert "caption-window" in result
+        assert "active-word" in result
+        assert "tl.set" in result
+        assert 'data-token-start="1.2"' in result
+        assert 'data-token-end="2.0"' in result
+        assert "OpenAI builds ChatGPT." not in result
+        assert '<audio id="audio-segment-001" data-start="0.0" data-duration="2.0" data-track-index="1"' in result
+        assert "window.__timelines" in result
+        assert 'tl.set(".scene:nth-of-type(1) [data-token-order=\'1\']"' in result

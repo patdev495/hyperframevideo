@@ -34,7 +34,7 @@ Each `## Scene N` block in `STORYBOARD.md` contains the following fields:
 # Storyboard
 
 Run ID: run-001
-Visual Treatment: ai-modern
+Visual Treatment: premium-news
 Total Duration: 3.50s
 Source Artifacts: SCRIPT.md, voiceover.json
 
@@ -49,7 +49,7 @@ Source Artifacts: SCRIPT.md, voiceover.json
 - **On-screen Text:** First screen text.
 - **Purpose:** Introduce the topic.
 - **Facts Used:** Fact A about the topic.
-- **Visual Direction:** [ai-modern]
+- **Visual Direction:** [premium-news]
 ```
 
 ## Rules
@@ -57,7 +57,7 @@ Source Artifacts: SCRIPT.md, voiceover.json
 - `STORYBOARD.md` depends on an approved `SCRIPT.md` and existing `voiceover.json`.
 - The command refuses to run if `STORYBOARD.md` already exists.
 - Start times are computed by accumulating `duration_seconds` from `voiceover.json`.
-- The default Visual Treatment is `ai-modern` unless `SCRIPT.md` declares another value.
+- The default Visual Treatment is `premium-news` unless `SCRIPT.md` declares another value.
 - `audio_path` values are relative to the Production Run directory so the run remains portable.
 - This artifact is the visual instruction contract for future HyperFrames composition generation.
 

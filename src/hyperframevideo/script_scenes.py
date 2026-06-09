@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from hyperframevideo.markdown_fields import partition_markdown_field
+
 
 class ScriptStoryboardError(Exception):
     pass
@@ -66,7 +68,7 @@ class ScriptStoryboardExtractor:
                 if current_field is not None:
                     field_values[current_field] = self._join_lines(current_lines)
                 current_field = matched_field
-                _, separator, value = normalized.partition(":")
+                _, separator, value = partition_markdown_field(normalized)
                 current_lines = [value.strip()] if value.strip() else []
             elif current_field is not None:
                 current_lines.append(normalized)
@@ -96,8 +98,11 @@ class ScriptStoryboardExtractor:
 
     def _match_field_label(self, line: str) -> str | None:
         """Return the attr name if line starts with a known field label."""
+        label_text, separator, _ = partition_markdown_field(line)
+        if not separator:
+            return None
         for label, attr in self._FIELD_LABELS:
-            if line.lower().startswith(label + ":"):
+            if label_text.strip().lower() == label:
                 return attr
         return None
 

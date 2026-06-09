@@ -45,7 +45,7 @@ The command fails instead of overwriting when `STORYBOARD.md` already exists. Th
 
 - **Timing**: start time and duration from `voiceover.json`.
 - **Script fields**: narration, on-screen text, purpose, and facts used from `SCRIPT.md`.
-- **Visual direction**: a placeholder scoped to the current Visual Treatment (default `ai-modern`).
+- **Visual direction**: a placeholder scoped to the current Visual Treatment (default `premium-news`).
 
 The generator is deterministic — the same inputs always produce the same `STORYBOARD.md`, making it testable and cacheable.
 

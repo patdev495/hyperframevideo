@@ -9,6 +9,11 @@ from hyperframevideo.production_runs import (
     ProductionRunStore,
     VoiceoverManifestEntry,
 )
+from hyperframevideo.karaoke_captions import (
+    KaraokeCaptionManifest,
+    KaraokeCaptionSegment,
+    KaraokeCaptionToken,
+)
 from hyperframevideo.story_artifacts import StoryArtifacts
 
 
@@ -261,3 +266,39 @@ def test_write_voiceover_manifest_records_provider_and_relative_audio_paths(
             },
         ],
     }
+
+
+def test_write_and_read_karaoke_caption_manifest(tmp_path: Path) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="caption-run")
+    manifest = KaraokeCaptionManifest(
+        timing_source="approximate",
+        segments=(
+            KaraokeCaptionSegment(
+                segment_id="segment-001",
+                tokens=(
+                    KaraokeCaptionToken(
+                        order=1,
+                        text="Hello",
+                        start_seconds=0.0,
+                        end_seconds=0.5,
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    store.write_karaoke_captions(run, manifest)
+
+    assert run.karaoke_captions_path == run.directory / "karaoke-captions.json"
+    assert run.karaoke_captions_path.exists()
+    assert store.read_karaoke_captions(run) == manifest
+
+
+def test_missing_karaoke_caption_manifest_is_backward_compatible(
+    tmp_path: Path,
+) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="old-run")
+
+    assert store.read_karaoke_captions(run) is None

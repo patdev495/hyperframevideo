@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from hyperframevideo.markdown_fields import partition_markdown_field
+
 
 @dataclass(frozen=True, slots=True)
 class ScriptApprovalResult:
@@ -40,8 +42,7 @@ class ScriptApprovalGate:
 
     def _parse_status(self, script_markdown: str) -> str | None:
         for line in script_markdown.splitlines():
-            normalized_line = line.strip()
-            label, separator, value = normalized_line.partition(":")
+            label, separator, value = partition_markdown_field(line)
             if separator and label.strip().lower() == "status":
                 return value.strip().lower()
         return None

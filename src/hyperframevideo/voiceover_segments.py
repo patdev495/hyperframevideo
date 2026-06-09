@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from hyperframevideo.markdown_fields import partition_markdown_field
+
 
 class VoiceoverNarrationError(Exception):
     pass
@@ -22,7 +24,7 @@ class VoiceoverNarrationExtractor:
 
         for line in script_markdown.splitlines():
             normalized_line = line.strip()
-            label, separator, value = normalized_line.partition(":")
+            label, separator, value = partition_markdown_field(normalized_line)
 
             if separator and label.strip().lower() == "narration":
                 current_narration_lines = [value.strip()]
@@ -76,7 +78,7 @@ class VoiceoverNarrationExtractor:
     def _ends_narration_block(self, line: str) -> bool:
         if line.startswith("#"):
             return True
-        label, separator, _ = line.partition(":")
+        label, separator, _ = partition_markdown_field(line)
         return bool(separator and label.strip().lower() in {
             "on-screen text",
             "purpose",
