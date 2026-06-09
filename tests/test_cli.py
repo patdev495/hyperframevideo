@@ -1,5 +1,6 @@
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
 from io import StringIO
@@ -724,6 +725,82 @@ class TestCliCompose:
         (tmp_path / ".runs" / "existing-compose" / "composition" / "index.html").write_text("old")
 
         result = cli.main(["--compose", "existing-compose"])
+
+        assert result == 1
+        stderr = capsys.readouterr().err
+        assert "already exists" in stderr
+
+
+class TestCliRender:
+    """--render runs npx hyperframes render and produces output.mp4."""
+
+    def _create_composed_run(self, tmp_path: pathlib.Path, run_name: str) -> pathlib.Path:
+        run_dir = tmp_path / ".runs" / run_name
+        run_dir.mkdir(parents=True)
+        (run_dir / "SCRIPT.md").write_text(
+            "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: Test.\nOn-screen text: Test.\n",
+            encoding="utf-8",
+        )
+        manifest = {"provider_name": "fake", "segments": [{
+            "segment_id": "segment-001", "order": 1,
+            "narration_text": "Test.", "audio_path": "voiceover/segment-001.wav",
+            "duration_seconds": 1.0, "warnings": [],
+        }]}
+        (run_dir / "voiceover.json").write_text(json.dumps(manifest), encoding="utf-8")
+        (run_dir / "voiceover").mkdir()
+        (run_dir / "voiceover" / "segment-001.wav").write_bytes(b"audio")
+        (run_dir / "STORYBOARD.md").write_text(
+            "# Storyboard\n\nRun ID: test\nVisual Treatment: ai-modern\n\n## Scene 1\n",
+            encoding="utf-8",
+        )
+        (run_dir / "composition").mkdir()
+        (run_dir / "composition" / "index.html").write_text(
+            "<html>composition</html>", encoding="utf-8"
+        )
+        return run_dir
+
+    def test_render_runs_subprocess_and_copies_mp4(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        monkeypatch.chdir(tmp_path)
+        self._create_composed_run(tmp_path, "render-run")
+        calls = []
+
+        def fake_run(*args, **kwargs):
+            calls.append(args)
+            # Create a fake output.mp4 in the cwd
+            dest_dir = tmp_path / ".runs" / "render-run" / "composition"
+            (dest_dir / "output.mp4").write_bytes(b"fake mp4")
+            return subprocess.CompletedProcess(args[0], 0, b"", b"")
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        monkeypatch.setattr(shutil, "which", lambda cmd: f"/usr/bin/{cmd}")
+
+        result = cli.main(["--render", "render-run"])
+
+        assert result == 0
+        stdout = capsys.readouterr().out
+        assert "output.mp4" in stdout
+        mp4_path = tmp_path / ".runs" / "render-run" / "output.mp4"
+        assert mp4_path.is_file()
+
+    def test_render_rejects_missing_composition(self, tmp_path, monkeypatch, capsys):
+        run_dir = tmp_path / ".runs" / "no-composition"
+        run_dir.mkdir(parents=True)
+        monkeypatch.chdir(tmp_path)
+
+        result = cli.main(["--render", "no-composition"])
+
+        assert result == 1
+        stderr = capsys.readouterr().err
+        assert "composition" in stderr.lower()
+
+    def test_render_rejects_when_output_exists(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        self._create_composed_run(tmp_path, "rerender-run")
+        (tmp_path / ".runs" / "rerender-run" / "output.mp4").write_bytes(b"old")
+
+        result = cli.main(["--render", "rerender-run"])
 
         assert result == 1
         stderr = capsys.readouterr().err

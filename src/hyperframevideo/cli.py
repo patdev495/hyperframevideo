@@ -4,6 +4,7 @@ import argparse
 import datetime
 import json
 import shutil
+import subprocess
 import sys
 from importlib.resources import files as resource_files
 from pathlib import Path
@@ -84,6 +85,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--compose",
         metavar="RUN_ID",
         help="Generate a HyperFrames composition from a storyboard.",
+    )
+    parser.add_argument(
+        "--render",
+        metavar="RUN_ID",
+        help="Render a composition to MP4 using HyperFrames.",
     )
     return parser
 
@@ -283,6 +289,73 @@ def main(argv: list[str] | None = None) -> int:
 
         print(f"Composition written to: {run.composition_dir / 'index.html'}")
         print("Next Step: Render the composition with hyperframe-video --render.")
+        return 0
+
+    if args.render:
+        if args.url or args.discover or args.voiceover or args.storyboard or args.compose:
+            parser.error("Provide --render without other source, --voiceover, --storyboard, or --compose flags.")
+
+        store = ProductionRunStore()
+        run = ProductionRun(
+            run_id=args.render,
+            directory=store.root / args.render,
+        )
+
+        if not run.composition_dir.exists():
+            print(
+                f"Error: composition/ not found for Production Run: {args.render}. "
+                "Run --compose first.",
+                file=sys.stderr,
+            )
+            return 1
+
+        if run.render_output_path.exists():
+            print(
+                f"Error: output.mp4 already exists for Production Run: {args.render}.",
+                file=sys.stderr,
+            )
+            return 1
+
+        # Check system requirements
+        missing: list[str] = []
+        for tool in ("node", "npx", "ffmpeg"):
+            if shutil.which(tool) is None:
+                missing.append(tool)
+        if missing:
+            print(
+                f"Error: Missing required tools: {', '.join(missing)}. "
+                "Please install them before rendering.",
+                file=sys.stderr,
+            )
+            return 1
+
+        # Run npx hyperframes render in composition directory
+        result = subprocess.run(
+            ["npx", "hyperframes", "render"],
+            cwd=str(run.composition_dir),
+            capture_output=True,
+            text=True,
+        )
+
+        if result.returncode != 0:
+            print(
+                f"Error: HyperFrames render failed:\n{result.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return 1
+
+        # Copy generated MP4 to run directory
+        generated_mp4 = run.composition_dir / "output.mp4"
+        if generated_mp4.exists():
+            shutil.copy2(generated_mp4, run.render_output_path)
+            print(f"Video rendered to: {run.render_output_path}")
+            print("Next Step: View the video or run the pipeline for another source.")
+        else:
+            print(
+                "Error: HyperFrames render completed but output.mp4 was not found.",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     if args.voiceover:
