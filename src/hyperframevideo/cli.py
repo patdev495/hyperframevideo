@@ -5,6 +5,8 @@ import datetime
 import json
 import shutil
 import sys
+from importlib.resources import files as resource_files
+from pathlib import Path
 
 from hyperframevideo import __version__
 from hyperframevideo.candidate_selector import CandidateSelector
@@ -23,6 +25,8 @@ from hyperframevideo.script_scenes import (
 )
 from hyperframevideo.storyboard_generator import StoryboardMarkdownGenerator
 from hyperframevideo.storyboard_planning import StoryboardPlanner
+from hyperframevideo.composition_generator import CompositionGenerator
+from hyperframevideo.treatment_config import TreatmentConfigError, TreatmentConfigLoader
 from hyperframevideo.voiceover_timing import VoiceoverTimingError, VoiceoverTimingLoader
 from hyperframevideo.source_evidence import SourceEvidenceBuilder
 from hyperframevideo.source_extractor import SourceExtractor
@@ -76,6 +80,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="RUN_ID",
         help="Generate a storyboard for a production run with voiceover timing.",
     )
+    parser.add_argument(
+        "--compose",
+        metavar="RUN_ID",
+        help="Generate a HyperFrames composition from a storyboard.",
+    )
     return parser
 
 
@@ -91,8 +100,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("Provide either a source URL or --discover, not both.")
 
     if args.storyboard:
-        if args.url or args.discover or args.voiceover:
-            parser.error("Provide --storyboard without a source URL, --discover, or --voiceover.")
+        if args.url or args.discover or args.voiceover or args.compose:
+            parser.error("Provide --storyboard without a source URL, --discover, --voiceover, or --compose.")
 
         store = ProductionRunStore()
         run = ProductionRun(
@@ -166,9 +175,119 @@ def main(argv: list[str] | None = None) -> int:
         print("Next Step: Review the storyboard and prepare for HyperFrames composition generation.")
         return 0
 
+    if args.compose:
+        store = ProductionRunStore()
+        run = ProductionRun(
+            run_id=args.compose,
+            directory=store.root / args.compose,
+        )
+
+        if run.composition_dir.exists():
+            print(
+                f"Error: composition/ already exists for Production Run: {args.compose}.",
+                file=sys.stderr,
+            )
+            return 1
+
+        if not run.storyboard_path.exists():
+            print(
+                f"Error: STORYBOARD.md not found for Production Run: {args.compose}.",
+                file=sys.stderr,
+            )
+            return 1
+
+        try:
+            script_markdown = run.script_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            print(
+                f"Error: SCRIPT.md not found for Production Run: {args.compose}",
+                file=sys.stderr,
+            )
+            return 1
+
+        approval = ScriptApprovalGate().evaluate(script_markdown)
+        if not approval.is_approved:
+            print(f"Error: {approval.diagnostic}", file=sys.stderr)
+            return 1
+
+        if not run.voiceover_manifest_path.exists():
+            print(
+                f"Error: voiceover.json not found for Production Run: {args.compose}",
+                file=sys.stderr,
+            )
+            return 1
+
+        try:
+            voiceover_json = run.voiceover_manifest_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            print(
+                f"Error: voiceover.json not found for Production Run: {args.compose}",
+                file=sys.stderr,
+            )
+            return 1
+
+        try:
+            scenes = ScriptStoryboardExtractor().extract(script_markdown)
+        except ScriptStoryboardError as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        try:
+            timing_entries = VoiceoverTimingLoader().load(voiceover_json)
+        except VoiceoverTimingError as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        try:
+            planned_scenes = StoryboardPlanner().plan(scenes, timing_entries)
+        except Exception as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        # Read visual treatment from STORYBOARD.md header
+        storyboard_content = run.storyboard_path.read_text(encoding="utf-8")
+        visual_treatment = "ai-modern"
+        for line in storyboard_content.splitlines():
+            if line.startswith("Visual Treatment:"):
+                visual_treatment = line.split(":", 1)[1].strip()
+                break
+
+        # Load treatment config
+        treatments_path = (
+            resource_files("hyperframevideo") / "treatments.json"
+        )
+        try:
+            treatment = TreatmentConfigLoader().load(
+                Path(str(treatments_path)), visual_treatment
+            )
+        except TreatmentConfigError as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        # Generate composition HTML
+        html = CompositionGenerator().generate(
+            planned_scenes,
+            treatment,
+            run_id=args.compose,
+        )
+        store.write_composition_html(run, html)
+
+        # Copy audio files to composition/voiceover/
+        audio_dest = run.composition_dir / "voiceover"
+        audio_dest.mkdir(parents=True, exist_ok=True)
+        for scene in planned_scenes:
+            audio_name = Path(scene.audio_path).name
+            src = run.voiceover_audio_dir / audio_name
+            if src.exists():
+                shutil.copy2(src, audio_dest / audio_name)
+
+        print(f"Composition written to: {run.composition_dir / 'index.html'}")
+        print("Next Step: Render the composition with hyperframe-video --render.")
+        return 0
+
     if args.voiceover:
-        if args.url or args.discover:
-            parser.error("Provide --voiceover without a source URL or --discover.")
+        if args.url or args.discover or args.compose:
+            parser.error("Provide --voiceover without a source URL, --discover, or --compose.")
 
         store = ProductionRunStore()
         run = ProductionRun(

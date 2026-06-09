@@ -654,3 +654,77 @@ def test_cli_storyboard_rejects_missing_voiceover_manifest_without_writing_artif
         in stderr
     )
     assert not (run_dir / "STORYBOARD.md").exists()
+
+
+class TestCliCompose:
+    """--compose generates composition/index.html from an approved run."""
+
+    def _create_approved_run_with_storyboard(
+        self, tmp_path: pathlib.Path, run_name: str
+    ) -> pathlib.Path:
+        run_dir = tmp_path / ".runs" / run_name
+        run_dir.mkdir(parents=True)
+        (run_dir / "SCRIPT.md").write_text(
+            "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: First approved narration.\nOn-screen text: First screen.\n",
+            encoding="utf-8",
+        )
+        manifest = {
+            "provider_name": "fake",
+            "segments": [{
+                "segment_id": "segment-001", "order": 1,
+                "narration_text": "First approved narration.",
+                "audio_path": "voiceover/segment-001.wav",
+                "duration_seconds": 1.5, "warnings": [],
+            }],
+        }
+        (run_dir / "voiceover.json").write_text(json.dumps(manifest), encoding="utf-8")
+        (run_dir / "voiceover").mkdir(parents=True)
+        (run_dir / "voiceover" / "segment-001.wav").write_bytes(b"fake audio")
+        (run_dir / "STORYBOARD.md").write_text(
+            "# Storyboard\n\nRun ID: test-run\nVisual Treatment: ai-modern\n\n## Scene 1\n",
+            encoding="utf-8",
+        )
+        return run_dir
+
+    def test_compose_creates_index_html_with_audio(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        self._create_approved_run_with_storyboard(tmp_path, "compose-run")
+
+        result = cli.main(["--compose", "compose-run"])
+
+        assert result == 0
+        stdout = capsys.readouterr().out
+        assert "composition/index.html" in stdout or "composition" in stdout
+        index_path = tmp_path / ".runs" / "compose-run" / "composition" / "index.html"
+        assert index_path.is_file()
+        html = index_path.read_text(encoding="utf-8")
+        assert "data-composition-id" in html
+        assert "First approved narration." in html
+        audio_dest = tmp_path / ".runs" / "compose-run" / "composition" / "voiceover" / "segment-001.wav"
+        assert audio_dest.is_file()
+
+    def test_compose_rejects_missing_storyboard(self, tmp_path, monkeypatch, capsys):
+        run_dir = tmp_path / ".runs" / "no-storyboard"
+        run_dir.mkdir(parents=True)
+        (run_dir / "SCRIPT.md").write_text("Status: approved\nLanguage: en\n", encoding="utf-8")
+        (run_dir / "voiceover.json").write_text('{"provider_name":"x","segments":[]}', encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        result = cli.main(["--compose", "no-storyboard"])
+
+        assert result == 1
+        stderr = capsys.readouterr().err
+        assert "STORYBOARD.md" in stderr
+        assert not (run_dir / "composition").exists()
+
+    def test_compose_rejects_when_composition_exists(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        self._create_approved_run_with_storyboard(tmp_path, "existing-compose")
+        (tmp_path / ".runs" / "existing-compose" / "composition").mkdir()
+        (tmp_path / ".runs" / "existing-compose" / "composition" / "index.html").write_text("old")
+
+        result = cli.main(["--compose", "existing-compose"])
+
+        assert result == 1
+        stderr = capsys.readouterr().err
+        assert "already exists" in stderr
