@@ -134,6 +134,34 @@ def test_write_candidates_records_presented_candidates_and_selection(
     }
 
 
+def test_storyboard_path_is_under_run_directory(tmp_path: Path) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="storyboard-run")
+
+    assert run.storyboard_path == run.directory / "STORYBOARD.md"
+
+
+def test_write_storyboard_writes_markdown_without_affecting_other_files(
+    tmp_path: Path,
+) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="storyboard-run")
+    run.script_path.write_text("Status: approved\n", encoding="utf-8")
+    run.voiceover_manifest_path.write_text('{"provider_name":"x","segments":[]}', encoding="utf-8")
+
+    store.write_storyboard(run, storyboard_markdown="# STORYBOARD\n\nScene 1 content.")
+
+    assert run.storyboard_path.read_text(encoding="utf-8") == (
+        "# STORYBOARD\n\nScene 1 content."
+    )
+    assert run.storyboard_path.is_file()
+    # Other files are untouched
+    assert run.script_path.read_text(encoding="utf-8") == "Status: approved\n"
+    assert run.voiceover_manifest_path.read_text(encoding="utf-8") == (
+        '{"provider_name":"x","segments":[]}'
+    )
+
+
 def test_write_voiceover_manifest_records_provider_and_relative_audio_paths(
     tmp_path: Path,
 ) -> None:

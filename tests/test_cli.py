@@ -499,11 +499,39 @@ def test_cli_storyboard_accepts_approved_run_with_voiceover_manifest(
     run_dir = tmp_path / ".runs" / "storyboard-run"
     run_dir.mkdir(parents=True)
     (run_dir / "SCRIPT.md").write_text(
-        "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: Approved narration.",
+        (
+            "Status: approved\nLanguage: en\n\n"
+            "## Segment 1\n"
+            "Narration: First approved narration.\n"
+            "On-screen text: First screen.\n\n"
+            "## Segment 2\n"
+            "Narration: Second approved narration.\n"
+            "On-screen text: Second screen."
+        ),
         encoding="utf-8",
     )
     (run_dir / "voiceover.json").write_text(
-        '{"provider_name": "fake", "segments": []}',
+        json.dumps({
+            "provider_name": "fake",
+            "segments": [
+                {
+                    "segment_id": "segment-001",
+                    "order": 1,
+                    "narration_text": "First approved narration.",
+                    "audio_path": "voiceover/segment-001.wav",
+                    "duration_seconds": 1.5,
+                    "warnings": [],
+                },
+                {
+                    "segment_id": "segment-002",
+                    "order": 2,
+                    "narration_text": "Second approved narration.",
+                    "audio_path": "voiceover/segment-002.wav",
+                    "duration_seconds": 2.0,
+                    "warnings": [],
+                },
+            ],
+        }),
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
@@ -512,9 +540,53 @@ def test_cli_storyboard_accepts_approved_run_with_voiceover_manifest(
 
     assert result == 0
     stdout = capsys.readouterr().out
-    assert "Storyboard inputs ready for Production Run: storyboard-run" in stdout
-    assert "Storyboard generation placeholder complete." in stdout
-    assert not (run_dir / "STORYBOARD.md").exists()
+    assert "Storyboard written to:" in stdout
+    assert "STORYBOARD.md" in stdout
+    assert (run_dir / "STORYBOARD.md").is_file()
+    storyboard = (run_dir / "STORYBOARD.md").read_text(encoding="utf-8")
+    assert "# Storyboard" in storyboard
+    assert "Run ID: storyboard-run" in storyboard
+    assert "## Scene 1" in storyboard
+    assert "## Scene 2" in storyboard
+    assert "First approved narration." in storyboard
+    assert "Second approved narration." in storyboard
+    assert "voiceover/segment-001.wav" in storyboard
+    assert "voiceover/segment-002.wav" in storyboard
+
+
+def test_cli_storyboard_rejects_rerun_when_storyboard_already_exists(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "rerun-storyboard"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: First.\nOn-screen text: Screen.",
+        encoding="utf-8",
+    )
+    (run_dir / "voiceover.json").write_text(
+        json.dumps({
+            "provider_name": "fake",
+            "segments": [
+                {
+                    "segment_id": "segment-001",
+                    "order": 1,
+                    "narration_text": "First.",
+                    "audio_path": "voiceover/segment-001.wav",
+                    "duration_seconds": 1.0,
+                    "warnings": [],
+                },
+            ],
+        }),
+        encoding="utf-8",
+    )
+    (run_dir / "STORYBOARD.md").write_text("# Existing storyboard", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--storyboard", "rerun-storyboard"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert "STORYBOARD.md already exists" in stderr
 
 
 def test_cli_storyboard_rejects_draft_script_without_writing_artifact(

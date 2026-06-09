@@ -17,6 +17,13 @@ from hyperframevideo.production_runs import (
     VoiceoverManifestEntry,
 )
 from hyperframevideo.script_approval import ScriptApprovalGate
+from hyperframevideo.script_scenes import (
+    ScriptStoryboardError,
+    ScriptStoryboardExtractor,
+)
+from hyperframevideo.storyboard_generator import StoryboardMarkdownGenerator
+from hyperframevideo.storyboard_planning import StoryboardPlanner
+from hyperframevideo.voiceover_timing import VoiceoverTimingError, VoiceoverTimingLoader
 from hyperframevideo.source_evidence import SourceEvidenceBuilder
 from hyperframevideo.source_extractor import SourceExtractor
 from hyperframevideo.story_artifacts import StoryArtifactGenerator
@@ -92,6 +99,14 @@ def main(argv: list[str] | None = None) -> int:
             run_id=args.storyboard,
             directory=store.root / args.storyboard,
         )
+
+        if run.storyboard_path.exists():
+            print(
+                f"Error: STORYBOARD.md already exists for Production Run: {args.storyboard}.",
+                file=sys.stderr,
+            )
+            return 1
+
         try:
             script_markdown = run.script_path.read_text(encoding="utf-8")
         except FileNotFoundError:
@@ -113,8 +128,42 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
 
-        print(f"Storyboard inputs ready for Production Run: {args.storyboard}")
-        print("Storyboard generation placeholder complete.")
+        try:
+            voiceover_json = run.voiceover_manifest_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            print(
+                f"Error: voiceover.json not found for Production Run: {args.storyboard}",
+                file=sys.stderr,
+            )
+            return 1
+
+        try:
+            scenes = ScriptStoryboardExtractor().extract(script_markdown)
+        except ScriptStoryboardError as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        try:
+            timing_entries = VoiceoverTimingLoader().load(voiceover_json)
+        except VoiceoverTimingError as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        try:
+            planned_scenes = StoryboardPlanner().plan(scenes, timing_entries)
+        except Exception as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        markdown = StoryboardMarkdownGenerator().generate(
+            planned_scenes,
+            run_id=args.storyboard,
+            visual_treatment="ai-modern",
+        )
+
+        store.write_storyboard(run, markdown)
+        print(f"Storyboard written to: {run.storyboard_path}")
+        print("Next Step: Review the storyboard and prepare for HyperFrames composition generation.")
         return 0
 
     if args.voiceover:

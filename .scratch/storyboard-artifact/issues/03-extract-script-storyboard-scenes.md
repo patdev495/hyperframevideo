@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Extract script storyboard scenes
 

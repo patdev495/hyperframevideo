@@ -52,6 +52,10 @@ class ProductionRun:
     def voiceover_audio_dir(self) -> Path:
         return self.directory / "voiceover"
 
+    @property
+    def storyboard_path(self) -> Path:
+        return self.directory / "STORYBOARD.md"
+
 
 @dataclass(frozen=True, slots=True)
 class ProductionRunStore:
@@ -96,6 +100,11 @@ class ProductionRunStore:
     def create_voiceover_audio_dir(self, run: ProductionRun) -> Path:
         run.voiceover_audio_dir.mkdir(parents=True, exist_ok=True)
         return run.voiceover_audio_dir
+
+    def write_storyboard(
+        self, run: ProductionRun, storyboard_markdown: str
+    ) -> None:
+        run.storyboard_path.write_text(storyboard_markdown, encoding="utf-8")
 
     def write_voiceover_manifest(
         self,

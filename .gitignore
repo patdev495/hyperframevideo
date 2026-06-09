@@ -60,6 +60,9 @@ temp/
 *.mp3
 *.m4a
 
+# Claude Code personal settings
+.claude/settings.local.json
+
 # Local environment
 .env
 .env.*

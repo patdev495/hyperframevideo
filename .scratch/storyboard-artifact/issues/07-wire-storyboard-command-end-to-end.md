@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Wire storyboard command end-to-end
 

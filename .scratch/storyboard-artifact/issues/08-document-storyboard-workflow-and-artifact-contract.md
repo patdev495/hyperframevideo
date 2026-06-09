@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Document storyboard workflow and artifact contract
 
