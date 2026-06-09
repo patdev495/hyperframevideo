@@ -21,6 +21,18 @@
       "body_font_size": "38px",
       "fade_in_duration": 0.45,
       "slide_up_duration": 0.7
+    },
+    {
+      "name": "tech-hype",
+      "background_color": "#0d0221",
+      "text_color": "#ffffff",
+      "accent_color": "#ff6b6b",
+      "secondary_color": "#ffd93d",
+      "font_family": "Inter, sans-serif",
+      "title_font_size": "56px",
+      "body_font_size": "32px",
+      "fade_in_duration": 0.2,
+      "slide_up_duration": 0.35
     }
   ]
 }

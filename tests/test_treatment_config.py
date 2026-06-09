@@ -96,3 +96,47 @@ class TestTreatmentConfigLoader:
         assert result.background_color
         assert result.text_color
         assert result.fade_in_duration > 0
+
+    def test_secondary_color_defaults_to_empty_string(self) -> None:
+        """secondary_color is optional; defaults to empty for backward compat."""
+        treatment = TreatmentConfig(
+            name="ai-modern",
+            background_color="#000",
+            text_color="#fff",
+            accent_color="#00f",
+            font_family="sans-serif",
+            title_font_size="48px",
+            body_font_size="24px",
+            fade_in_duration=0.5,
+            slide_up_duration=0.6,
+        )
+        assert treatment.secondary_color == ""
+
+    def test_secondary_color_from_json(self, tmp_path: Path) -> None:
+        config_path = tmp_path / "treatments.json"
+        config_path.write_text(
+            json.dumps({
+                "treatments": [
+                    {
+                        "name": "tech-hype",
+                        "background_color": "#0d0221",
+                        "text_color": "#ffffff",
+                        "accent_color": "#ff6b6b",
+                        "secondary_color": "#ffd93d",
+                        "font_family": "Inter, sans-serif",
+                        "title_font_size": "56px",
+                        "body_font_size": "32px",
+                        "fade_in_duration": 0.2,
+                        "slide_up_duration": 0.3,
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+
+        result = TreatmentConfigLoader().load(config_path, "tech-hype")
+
+        assert result.name == "tech-hype"
+        assert result.secondary_color == "#ffd93d"
+        assert result.accent_color == "#ff6b6b"
+        assert result.background_color == "#0d0221"

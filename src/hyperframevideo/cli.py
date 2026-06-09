@@ -47,7 +47,7 @@ from hyperframevideo.vieneu_voiceover import (
 )
 
 
-def _visual_treatment_from_markdown(markdown: str, default: str = "ai-modern") -> str:
+def _visual_treatment_from_markdown(markdown: str, default: str = "tech-hype") -> str:
     for line in markdown.splitlines():
         if line.startswith("Visual Treatment:"):
             value = line.split(":", 1)[1].strip()
@@ -64,6 +64,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--version",
         action="store_true",
         help="Print the CLI version and exit.",
+    )
+    parser.add_argument(
+        "--list-treatments",
+        action="store_true",
+        help="List available Visual Treatments and exit.",
     )
     parser.add_argument(
         "url",
@@ -145,6 +150,14 @@ def build_run_parser() -> argparse.ArgumentParser:
         help="Render output.mp4 after composition.",
     )
     parser.add_argument(
+        "--treatment",
+        default=None,
+        help=(
+            "Visual Treatment to use (default: tech-hype). "
+            "Use --list-treatments to see available options."
+        ),
+    )
+    parser.add_argument(
         "--progress-format",
         choices=("text", "jsonl"),
         default="text",
@@ -171,6 +184,7 @@ def _run_orchestrated(argv: list[str]) -> int:
             render=args.render,
             progress_format=args.progress_format,
             progress_writer=write_progress,
+            visual_treatment=args.treatment or "tech-hype",
         )
     )
 
@@ -186,6 +200,19 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.version:
         print(f"hyperframevideo {__version__}")
+        return 0
+
+    if args.list_treatments:
+        treatments_path = (
+            resource_files("hyperframevideo") / "treatments.json"
+        )
+        names = TreatmentConfigLoader().list_names(Path(str(treatments_path)))
+        if not names:
+            print("No treatments found.", file=sys.stderr)
+            return 1
+        print("Available Visual Treatments:")
+        for name in names:
+            print(f"  - {name}")
         return 0
 
     if args.url and args.discover:

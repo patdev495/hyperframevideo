@@ -14,7 +14,7 @@ class StoryboardMarkdownGenerator:
         scenes: list[StoryboardScene],
         *,
         run_id: str = "",
-        visual_treatment: str = "ai-modern",
+        visual_treatment: str = "tech-hype",
     ) -> str:
         total_duration = sum(scene.duration_seconds for scene in scenes)
         lines: list[str] = ["# Storyboard", ""]

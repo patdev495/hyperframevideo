@@ -58,6 +58,7 @@ class PipelineRunRequest:
     render: bool = False
     progress_format: str = "text"
     progress_writer: ProgressWriter | None = None
+    visual_treatment: str = "tech-hype"
 
 
 @dataclass(slots=True)
@@ -188,7 +189,10 @@ class PipelineOrchestrator:
         result = provider.draft_script(
             evidence, _load_script_drafting_prompt(language=request.language)
         )
-        run.script_path.write_text(result.script_markdown, encoding="utf-8")
+        script = _apply_visual_treatment(
+            result.script_markdown, request.visual_treatment
+        )
+        run.script_path.write_text(script, encoding="utf-8")
         progress.emit(
             "draft_script",
             "completed",
@@ -456,19 +460,24 @@ def _read_source_evidence(path: Path) -> SourceEvidence:
 
 
 def _load_script_drafting_prompt(*, language: str) -> ScriptDraftingPrompt:
-    prompt_path = Path("docs") / "prompts" / "script-drafting.md"
+    prompt_name = "script-drafting.vi.md" if language == "vi" else "script-drafting.md"
+    prompt_path = Path("docs") / "prompts" / prompt_name
     if prompt_path.exists():
         prompt_text = prompt_path.read_text(encoding="utf-8")
     else:
-        prompt_text = (
-        "Produce SCRIPT.md only as a Source-Grounded Script from the Source Evidence."
-        )
-    return ScriptDraftingPrompt(
-        f"{prompt_text}\n\n"
-        "Run-specific language override:\n"
-        f"- Write all audience-facing SCRIPT.md content in {_language_name(language)}.\n"
-        f"- The SCRIPT.md header must include exactly: Language: {language}\n"
+        fallback = Path("docs") / "prompts" / "script-drafting.md"
+        if fallback.exists():
+            prompt_text = fallback.read_text(encoding="utf-8")
+        else:
+            prompt_text = (
+                "Produce SCRIPT.md only as a Source-Grounded Script "
+                "from the Source Evidence."
+            )
+    language_override = (
+        f"\nLanguage: {language}\n"
+        f"All content must be written in {_language_name(language)}.\n"
     )
+    return ScriptDraftingPrompt(f"{prompt_text}\n\n{language_override}")
 
 
 def _language_name(language: str) -> str:
@@ -478,9 +487,20 @@ def _language_name(language: str) -> str:
     }.get(language, language)
 
 
-def _visual_treatment_from_markdown(markdown: str, default: str = "ai-modern") -> str:
+def _visual_treatment_from_markdown(markdown: str, default: str = "tech-hype") -> str:
     for line in markdown.splitlines():
         if line.startswith("Visual Treatment:"):
             value = line.split(":", 1)[1].strip()
             return value or default
     return default
+
+
+def _apply_visual_treatment(markdown: str, treatment: str) -> str:
+    """Overwrite the Visual Treatment header line in a SCRIPT.md / STORYBOARD.md."""
+    lines = markdown.splitlines()
+    for i, line in enumerate(lines):
+        label, separator, _value = partition_markdown_field(line)
+        if separator and label.strip().lower() == "visual treatment":
+            lines[i] = f"Visual Treatment: {treatment}"
+            return "\n".join(lines)
+    return markdown

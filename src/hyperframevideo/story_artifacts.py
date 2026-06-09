@@ -15,7 +15,7 @@ class StoryArtifacts:
 class StoryArtifactGenerator:
     language: str = "en"
     target_duration: str = "60-90 seconds"
-    visual_treatment: str = "premium-news"
+    visual_treatment: str = "tech-hype"
 
     def generate(self, evidence: SourceEvidence) -> StoryArtifacts:
         return StoryArtifacts(

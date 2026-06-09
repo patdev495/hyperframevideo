@@ -16,11 +16,12 @@ class TreatmentConfig:
     background_color: str
     text_color: str
     accent_color: str
-    font_family: str
-    title_font_size: str
-    body_font_size: str
-    fade_in_duration: float
-    slide_up_duration: float
+    secondary_color: str = ""
+    font_family: str = "Inter, sans-serif"
+    title_font_size: str = "48px"
+    body_font_size: str = "24px"
+    fade_in_duration: float = 0.5
+    slide_up_duration: float = 0.6
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +57,21 @@ class TreatmentConfigLoader:
             f"Unknown treatment: {treatment_name!r}."
         )
 
+    def list_names(self, config_path: Path) -> list[str]:
+        """Return names of all available treatments."""
+        try:
+            payload = json.loads(config_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+        treatments = payload.get("treatments")
+        if not isinstance(treatments, list):
+            return []
+        return [
+            str(entry["name"])
+            for entry in treatments
+            if isinstance(entry, dict) and "name" in entry
+        ]
+
     def _build(self, entry: dict[str, Any]) -> TreatmentConfig:
         try:
             return TreatmentConfig(
@@ -63,6 +79,7 @@ class TreatmentConfigLoader:
                 background_color=str(entry["background_color"]),
                 text_color=str(entry["text_color"]),
                 accent_color=str(entry["accent_color"]),
+                secondary_color=str(entry.get("secondary_color", "")),
                 font_family=str(entry["font_family"]),
                 title_font_size=str(entry["title_font_size"]),
                 body_font_size=str(entry["body_font_size"]),

@@ -245,3 +245,54 @@ class TestCompositionGenerator:
         assert '<audio id="audio-segment-001" data-start="0.0" data-duration="2.0" data-track-index="1"' in result
         assert "window.__timelines" in result
         assert 'tl.set(".scene:nth-of-type(1) [data-token-order=\'1\']"' in result
+
+    def test_tech_hype_generates_split_text_kaboom_and_background_layers(self) -> None:
+        """tech-hype treatment produces HTML with particle bg, scanlines,
+        split-word text animation, cycled transitions, data callouts."""
+        scenes = [
+            StoryboardScene(
+                order=1, segment_id="seg-001", start_time_seconds=0.0,
+                duration_seconds=2.0, audio_path="voice.wav",
+                narration_text="First scene with 340% growth.",
+                on_screen_text="Tech News Today",
+                purpose="Hook", facts_used=None,
+            ),
+            StoryboardScene(
+                order=2, segment_id="seg-002", start_time_seconds=2.0,
+                duration_seconds=2.0, audio_path="voice2.wav",
+                narration_text="Second scene here.",
+                on_screen_text="Market Update",
+                purpose="Body", facts_used=None,
+            ),
+        ]
+        treatment = TreatmentConfig(
+            name="tech-hype",
+            background_color="#0d0221",
+            text_color="#ffffff",
+            accent_color="#ff6b6b",
+            secondary_color="#ffd93d",
+            font_family="Inter, sans-serif",
+            title_font_size="56px",
+            body_font_size="32px",
+            fade_in_duration=0.2,
+            slide_up_duration=0.35,
+        )
+
+        result = CompositionGenerator().generate(scenes, treatment, run_id="tech-run")
+
+        # Dispatches to tech-hype template
+        assert "tech-hype" in result or "data-visual-treatment=" in result
+        # Background layers
+        assert "scanlines" in result
+        assert "particle" in result.lower() or "particle" in result
+        # Split-word animation: each word in its own span
+        assert "split-word" in result
+        # GSAP stagger for split text
+        assert "stagger" in result
+        # Scene transition styles (slide, zoom, glitch)
+        assert "slide" in result.lower() or "glitch" in result.lower() or "zoom" in result.lower()
+        # Data callout glow on number
+        assert "data-glow" in result or "data-callout" in result or "340" in result
+        # Deterministic
+        result2 = CompositionGenerator().generate(scenes, treatment, run_id="tech-run")
+        assert result == result2

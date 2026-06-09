@@ -23,6 +23,10 @@ class CompositionGenerator:
             return self._generate_premium_news(
                 scenes, treatment, run_id=run_id, karaoke_captions=karaoke_captions
             )
+        if treatment.name == "tech-hype":
+            return self._generate_tech_hype(
+                scenes, treatment, run_id=run_id
+            )
 
         lines: list[str] = []
         lines.append("<!DOCTYPE html>")
@@ -193,6 +197,175 @@ class CompositionGenerator:
                 "</html>",
             ]
         )
+        return "\n".join(lines)
+
+    @staticmethod
+    def _highlight_numbers(text: str) -> str:
+        """Wrap numbers, percentages, and currency values in data-glow span."""
+        import re
+        return re.sub(
+            r"(-?\$?[\d,]+(?:\.\d+)?%?)",
+            r'<span class="data-glow">\1</span>',
+            escape(text),
+        )
+
+    @staticmethod
+    def _split_words(text: str) -> list[str]:
+        """Split text into word spans for kaboom animation."""
+        words = text.split()
+        result: list[str] = []
+        for i, word in enumerate(words):
+            result.append(
+                f'<span class="split-word" data-word-index="{i}">'
+                f"{escape(word)}</span>"
+            )
+        return result
+
+    @staticmethod
+    def _transition_class(index: int) -> str:
+        """Cycle through slide, zoom, and glitch transitions."""
+        return ["slide", "zoom", "glitch"][index % 3]
+
+    def _generate_tech_hype(
+        self,
+        scenes: list[StoryboardScene],
+        treatment: TreatmentConfig,
+        *,
+        run_id: str,
+    ) -> str:
+        lines: list[str] = [
+            "<!DOCTYPE html>",
+            '<html lang="en">',
+            "<head>",
+            "<meta charset='utf-8'>",
+            "<style>",
+            "  * { margin: 0; padding: 0; box-sizing: border-box; }",
+            f"  body {{ background: {treatment.background_color}; color: {treatment.text_color}; font-family: {treatment.font_family}; overflow: hidden; }}",
+            f"  #stage {{ width: 1080px; height: 1920px; position: relative; overflow: hidden; background: {treatment.background_color}; }}",
+            # — bg layers —
+            "  .hype-bg { position: absolute; inset: -10%; pointer-events: none; }",
+            f"  .hype-bg.mesh {{ background: radial-gradient(circle at 22% 18%, {treatment.accent_color}44, transparent 32%), radial-gradient(circle at 76% 14%, rgba(108,92,231,.22), transparent 30%), radial-gradient(circle at 44% 86%, {treatment.secondary_color or '#ffd93d'}33, transparent 28%); filter: blur(3px); }}",
+            "  .hype-bg.scanlines { background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.03) 2px, rgba(255,255,255,.03) 4px); }",
+            "  .hype-bg.vignette { inset: 0; background: radial-gradient(circle at 50% 44%, transparent 30%, rgba(0,0,0,.68) 100%); }",
+            # — particle styles —
+            "  .particle-container { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }",
+            "  .particle { position: absolute; width: 4px; height: 4px; border-radius: 50%; opacity: 0; animation: floatParticle linear infinite; }",
+            "  @keyframes floatParticle {",
+            "    0% { opacity: 0; transform: translateY(0) scale(0.5); }",
+            "    20% { opacity: 0.7; }",
+            "    80% { opacity: 0.4; }",
+            "    100% { opacity: 0; transform: translateY(-120vh) scale(1.2); }",
+            "  }",
+            # — scene layout —
+            "  .hype-scene { position: absolute; inset: 0; display: grid; grid-template-rows: 1fr auto 1fr; padding: 100px 72px; opacity: 0; }",
+            "  .hype-scene-cell { align-self: center; }",
+            f"  .hype-eyebrow {{ color: {treatment.secondary_color or '#ffd93d'}; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 16px; }}",
+            f"  .hype-title {{ color: {treatment.text_color}; font-size: {treatment.title_font_size}; line-height: 1.1; font-weight: 900; text-wrap: balance; }}",
+            "  .split-word { display: inline-block; opacity: 0; transform: translateY(40px) scale(0.7); }",
+            f"  .hype-body {{ font-size: {treatment.body_font_size}; font-weight: 500; color: rgba(255,255,255,.72); margin-top: 28px; line-height: 1.4; }}",
+            f"  .data-glow {{ color: {treatment.secondary_color or '#ffd93d'}; text-shadow: 0 0 20px {treatment.secondary_color or '#ffd93d'}99, 0 0 60px {treatment.secondary_color or '#ffd93d'}33; font-weight: 900; }}",
+            # — transitions —
+            f"  .hype-transition {{ position: absolute; inset: 0; pointer-events: none; }}",
+            f"  .hype-transition.slide {{ background: linear-gradient(90deg, transparent, {treatment.accent_color}55, transparent); transform: translateX(-120%); }}",
+            f"  .hype-transition.zoom {{ background: radial-gradient(circle, {treatment.accent_color}33, transparent); transform: scale(0); border-radius: 50%; }}",
+            "  .hype-transition.glitch { background: linear-gradient(180deg, transparent 35%, rgba(255,255,255,.08) 50%, transparent 65%); transform: translateY(-120%); }",
+            # — outro —
+            "  .hype-outro { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; }",
+            f"  .hype-outro-text {{ font-size: calc({treatment.title_font_size} * 0.6); font-weight: 900; color: {treatment.accent_color}; text-align: center; text-shadow: 0 0 40px {treatment.accent_color}66; }}",
+            "  .hype-outro-sub { font-size: 28px; font-weight: 500; color: rgba(255,255,255,.48); margin-top: 20px; }",
+            "</style>",
+            "</head>",
+            "<body>",
+            f'<div id="stage" data-composition-id="{escape(run_id)}" data-start="0" data-width="1080" data-height="1920" data-visual-treatment="tech-hype">',
+            '  <div class="hype-bg mesh"></div>',
+            '  <div class="hype-bg scanlines"></div>',
+            '  <div class="hype-bg vignette"></div>',
+        ]
+
+        # Particle container
+        particle_id = f"particles-{run_id}" if run_id else "particles-default"
+        lines.append(f'  <div class="particle-container" id="{particle_id}"></div>')
+
+        for index, scene in enumerate(scenes):
+            track = index
+            trans_class = self._transition_class(index)
+            title = scene.on_screen_text or f"Scene {scene.order}"
+            eyebrow = f"Scene {scene.order:02d}"
+
+            lines.append(f'  <section class="clip hype-scene" data-composition-id="{escape(run_id)}" data-start="{scene.start_time_seconds}" data-duration="{scene.duration_seconds}" data-track-index="{track}">')
+            lines.append(f'    <div class="hype-transition {trans_class}"></div>')
+            lines.append("    <div></div>")
+            lines.append('    <div class="hype-scene-cell">')
+            lines.append(f'      <div class="hype-eyebrow">{escape(eyebrow)}</div>')
+            lines.append(f'      <h2 class="hype-title">{" ".join(self._split_words(title))}</h2>')
+            body_html = self._highlight_numbers(scene.narration_text)
+            lines.append(f'      <p class="hype-body">{body_html}</p>')
+            lines.append("    </div>")
+            lines.append("    <div></div>")
+            lines.append("  </section>")
+
+            audio_path = escape(scene.audio_path)
+            audio_track = len(scenes) + index
+            lines.append(f'  <audio id="audio-{escape(scene.segment_id)}" data-start="{scene.start_time_seconds}" data-duration="{scene.duration_seconds}" data-track-index="{audio_track}" src="{audio_path}"></audio>')
+
+        lines.append("</div>")
+        lines.append('<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>')
+        lines.append("<script>")
+        # Particle JS
+        lines.append("  (function(){")
+        lines.append(f'    var c=document.getElementById({_js_string(particle_id)});')
+        lines.append("    if(!c)return;")
+        lines.append(f"    var colors=[{_js_string(treatment.accent_color)},{_js_string(treatment.secondary_color or '#ffd93d')},'rgba(108,92,231,0.5)'];")
+        lines.append("    for(var i=0;i<35;i++){")
+        lines.append("      var p=document.createElement('div');")
+        lines.append("      p.className='particle';")
+        lines.append("      p.style.left=Math.random()*100+'%';")
+        lines.append("      p.style.top=Math.random()*100+'%';")
+        lines.append("      p.style.background=colors[Math.floor(Math.random()*colors.length)];")
+        lines.append("      p.style.width=(2+Math.random()*4)+'px';")
+        lines.append("      p.style.height=p.style.width;")
+        lines.append("      p.style.animationDuration=(6+Math.random()*10)+'s';")
+        lines.append("      p.style.animationDelay=(Math.random()*8)+'s';")
+        lines.append("      c.appendChild(p);")
+        lines.append("    }")
+        lines.append("  })();")
+        # GSAP timeline
+        lines.append("  var tl=gsap.timeline({paused:true});")
+        for index, scene in enumerate(scenes):
+            trans_class = self._transition_class(index)
+            selector = f".hype-scene:nth-of-type({index + 1})"
+            trans_sel = f"{selector} .hype-transition.{trans_class}"
+            scene_end = scene.start_time_seconds + scene.duration_seconds
+
+            # Scene fade in
+            lines.append(f"  tl.to({_js_string(selector)},{{opacity:1,duration:{treatment.fade_in_duration}}},{scene.start_time_seconds});")
+            # Transition animation
+            if trans_class == "slide":
+                lines.append(f"  tl.to({_js_string(trans_sel)},{{x:'120%',duration:0.5,ease:'power2.inOut'}},{scene.start_time_seconds});")
+            elif trans_class == "zoom":
+                lines.append(f"  tl.to({_js_string(trans_sel)},{{scale:2.5,opacity:0,duration:0.5,ease:'power2.out'}},{scene.start_time_seconds});")
+            elif trans_class == "glitch":
+                lines.append(f"  tl.to({_js_string(trans_sel)},{{y:'120%',duration:0.35,ease:'power4.inOut'}},{scene.start_time_seconds});")
+                glitch2 = f"{selector} .hype-transition.glitch"
+                lines.append(f"  tl.from({_js_string(glitch2)},{{y:'120%',duration:0.35,ease:'power4.inOut'}},{scene.start_time_seconds + 0.35});")
+
+            # Split-word kaboom
+            words_sel = f"{selector} .split-word"
+            lines.append(f"  tl.to({_js_string(words_sel)},{{opacity:1,y:0,scale:1,stagger:0.08,duration:0.35,ease:'back.out(1.7)'}},{scene.start_time_seconds + treatment.fade_in_duration + 0.05});")
+            # Body fade in
+            body_sel = f"{selector} .hype-body"
+            lines.append(f"  tl.from({_js_string(body_sel)},{{opacity:0,y:20,duration:0.25}},{scene.start_time_seconds + treatment.fade_in_duration + 0.35});")
+            # Scene fade out
+            lines.append(f"  tl.to({_js_string(selector)},{{opacity:0,duration:0.15}},{scene_end - 0.15});")
+            lines.append(f"  tl.set({_js_string(selector)},{{opacity:0}},{scene_end});")
+
+        lines.extend([
+            "  window.__timelines=window.__timelines||{};",
+            f'  window.__timelines[{_js_string(run_id)}]=tl;',
+            "</script>",
+            "</body>",
+            "</html>",
+        ])
         return "\n".join(lines)
 
 
