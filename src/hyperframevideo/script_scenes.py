@@ -41,8 +41,8 @@ class ScriptStoryboardExtractor:
         return scenes
 
     def _split_segments(self, script_markdown: str) -> list[str]:
-        parts = re.split(r"^## Segment \d+", script_markdown, flags=re.MULTILINE)
-        # First part is content before any ## Segment (header, status, etc.)
+        parts = re.split(r"^## (?:Segment|Đoạn) \d+", script_markdown, flags=re.MULTILINE)
+        # First part is content before any ## Segment / ## Đoạn (header, status, etc.)
         return [part.strip() for part in parts[1:] if part.strip()]
 
     def _parse_segment(self, block: str, order: int) -> ScriptScene:
