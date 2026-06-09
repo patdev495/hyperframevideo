@@ -1,0 +1,15 @@
+{
+  "treatments": [
+    {
+      "name": "ai-modern",
+      "background_color": "#0f172a",
+      "text_color": "#f8fafc",
+      "accent_color": "#3b82f6",
+      "font_family": "Inter, sans-serif",
+      "title_font_size": "48px",
+      "body_font_size": "24px",
+      "fade_in_duration": 0.5,
+      "slide_up_duration": 0.6
+    }
+  ]
+}
