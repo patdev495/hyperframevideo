@@ -17,3 +17,18 @@ class ExtractedSource:
     published_at: str | None
     extraction_method: str
     warnings: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoveryRequest:
+    query: str
+    candidate_count: int = 5
+
+
+@dataclass(frozen=True, slots=True)
+class NewsCandidate:
+    url: str
+    title: str
+    source_name: str | None
+    published_at: str | None
+    summary: str | None
