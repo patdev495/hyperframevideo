@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Add Voiceover command approval gate
 
@@ -14,13 +14,13 @@ This slice should not generate audio yet. It establishes the user-facing command
 
 ## Acceptance criteria
 
-- [ ] The CLI exposes a voiceover command or mode that accepts a run ID.
-- [ ] The command locates the target **Production Run** and reads `SCRIPT.md`.
-- [ ] `Status: approved` allows the command to proceed to a placeholder success path.
-- [ ] `Status: draft`, missing status, unsupported status, or missing `SCRIPT.md` produce readable diagnostics.
-- [ ] Failure exits non-zero and writes no voiceover artifacts.
-- [ ] Existing Direct Source and Discovery Request CLI flows are unaffected.
-- [ ] Tests cover approved, draft, and missing-script behavior using temporary run directories.
+- [x] The CLI exposes a voiceover command or mode that accepts a run ID.
+- [x] The command locates the target **Production Run** and reads `SCRIPT.md`.
+- [x] `Status: approved` allows the command to proceed to a placeholder success path.
+- [x] `Status: draft`, missing status, unsupported status, or missing `SCRIPT.md` produce readable diagnostics.
+- [x] Failure exits non-zero and writes no voiceover artifacts.
+- [x] Existing Direct Source and Discovery Request CLI flows are unaffected.
+- [x] Tests cover approved, draft, and missing-script behavior using temporary run directories.
 
 ## Blocked by
 

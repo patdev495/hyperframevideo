@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Document Voiceover workflow and artifact contract
 
@@ -14,12 +14,12 @@ This slice should keep the workflow CLI-first and should not promise production-
 
 ## Acceptance criteria
 
-- [ ] Documentation explains that `SCRIPT.md` must be `Status: approved`.
-- [ ] Documentation shows the voiceover CLI command.
-- [ ] Documentation lists generated voiceover files and `voiceover.json`.
-- [ ] Documentation explains that `voiceover.json` is the timing and audio contract for future storyboard work.
-- [ ] Documentation states that VieNeu-TTS is the first real provider target and explains setup/runtime limitations.
-- [ ] Documentation does not introduce storyboard, HyperFrames composition, MP4 render, or web UI work into this phase.
+- [x] Documentation explains that `SCRIPT.md` must be `Status: approved`.
+- [x] Documentation shows the voiceover CLI command.
+- [x] Documentation lists generated voiceover files and `voiceover.json`.
+- [x] Documentation explains that `voiceover.json` is the timing and audio contract for future storyboard work.
+- [x] Documentation states that VieNeu-TTS is the first real provider target and explains setup/runtime limitations.
+- [x] Documentation does not introduce storyboard, HyperFrames composition, MP4 render, or web UI work into this phase.
 
 ## Blocked by
 

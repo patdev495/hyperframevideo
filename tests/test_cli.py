@@ -5,6 +5,7 @@ import sys
 from io import StringIO
 
 from hyperframevideo import cli
+from hyperframevideo.vieneu_voiceover import VoiceoverOutput
 
 
 def test_cli_version_reports_package_version() -> None:
@@ -285,3 +286,162 @@ def test_cli_discovery_request_fails_gracefully_when_no_candidates_are_found(
     assert "Error:" in stderr
     assert "No news candidates found for: missing topic" in stderr
     assert not (tmp_path / ".runs" / "empty-run").exists()
+
+
+class FakeVoiceoverProvider:
+    def synthesize(self, segments, audio_dir):
+        audio_dir.mkdir(parents=True, exist_ok=True)
+        outputs = []
+        for segment in segments:
+            audio_path = audio_dir / f"{segment.segment_id}.wav"
+            audio_path.write_bytes(b"fake wav")
+            outputs.append(
+                VoiceoverOutput(
+                    segment_id=segment.segment_id,
+                    order=segment.order,
+                    narration_text=segment.narration_text,
+                    audio_path=audio_path,
+                    duration_seconds=float(segment.order),
+                    provider_name="fake-vieneu",
+                    voice_config={"mode": "test", "voice_name": "fixture"},
+                )
+            )
+        return outputs
+
+
+def test_cli_voiceover_generates_manifest_and_audio_files_for_approved_run(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "approved-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        (
+            "Status: approved\n"
+            "Language: en\n\n"
+            "## Segment 1\n"
+            "Narration: First approved narration.\n\n"
+            "## Segment 2\n"
+            "Narration: Second approved narration."
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "VieNeuVoiceoverProvider", FakeVoiceoverProvider)
+
+    result = cli.main(["--voiceover", "approved-run"])
+
+    assert result == 0
+    stdout = capsys.readouterr().out
+    assert "Voiceover approved for Production Run: approved-run" in stdout
+    assert "Extracted voiceover segments: 2" in stdout
+    assert "Voiceover manifest:" in stdout
+    assert "Next Step: Use voiceover.json for storyboard timing." in stdout
+
+    manifest_path = run_dir / "voiceover.json"
+    assert manifest_path.is_file()
+    assert (run_dir / "voiceover" / "segment-001.wav").is_file()
+    assert (run_dir / "voiceover" / "segment-002.wav").is_file()
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert payload == {
+        "provider_name": "fake-vieneu",
+        "segments": [
+            {
+                "segment_id": "segment-001",
+                "order": 1,
+                "narration_text": "First approved narration.",
+                "audio_path": "voiceover/segment-001.wav",
+                "duration_seconds": 1.0,
+                "warnings": [],
+            },
+            {
+                "segment_id": "segment-002",
+                "order": 2,
+                "narration_text": "Second approved narration.",
+                "audio_path": "voiceover/segment-002.wav",
+                "duration_seconds": 2.0,
+                "warnings": [],
+            },
+        ],
+    }
+
+
+def test_cli_voiceover_rejects_draft_script_without_writing_artifacts(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "draft-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: draft\nLanguage: en\n\n## Narration\nDraft narration.",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--voiceover", "draft-run"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert "Error: Script is still draft." in stderr
+    assert not (run_dir / "voiceover").exists()
+    assert not (run_dir / "voiceover.json").exists()
+    assert not (run_dir / "VOICEOVER.md").exists()
+
+
+def test_cli_voiceover_rejects_missing_script_without_writing_artifacts(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "missing-script-run"
+    run_dir.mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--voiceover", "missing-script-run"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert "Error: SCRIPT.md not found for Production Run: missing-script-run" in stderr
+    assert not (run_dir / "voiceover").exists()
+    assert not (run_dir / "voiceover.json").exists()
+    assert not (run_dir / "VOICEOVER.md").exists()
+
+
+def test_cli_voiceover_rejects_approved_script_without_narration(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "no-narration-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: approved\nLanguage: en\n\n## Segment 1\nOn-screen text: Caption only.",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    result = cli.main(["--voiceover", "no-narration-run"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert "Error: Approved script contains no Narration lines." in stderr
+    assert not (run_dir / "voiceover").exists()
+    assert not (run_dir / "voiceover.json").exists()
+    assert not (run_dir / "VOICEOVER.md").exists()
+
+
+def test_cli_voiceover_rejects_rerun_when_artifacts_already_exist(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    run_dir = tmp_path / ".runs" / "rerun-voiceover"
+    run_dir.mkdir(parents=True)
+    (run_dir / "SCRIPT.md").write_text(
+        "Status: approved\nLanguage: en\n\n## Segment 1\nNarration: Approved narration.",
+        encoding="utf-8",
+    )
+    (run_dir / "voiceover.json").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "VieNeuVoiceoverProvider", FakeVoiceoverProvider)
+
+    result = cli.main(["--voiceover", "rerun-voiceover"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert (
+        "Error: Voiceover artifacts already exist for Production Run: rerun-voiceover"
+        in stderr
+    )

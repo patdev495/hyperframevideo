@@ -4,7 +4,11 @@ from pathlib import Path
 import pytest
 
 from hyperframevideo.models import NewsCandidate
-from hyperframevideo.production_runs import ProductionRunExistsError, ProductionRunStore
+from hyperframevideo.production_runs import (
+    ProductionRunExistsError,
+    ProductionRunStore,
+    VoiceoverManifestEntry,
+)
 from hyperframevideo.story_artifacts import StoryArtifacts
 
 
@@ -19,6 +23,8 @@ def test_create_production_run_returns_artifact_paths(tmp_path: Path) -> None:
     assert run.candidates_path == run.directory / "candidates.json"
     assert run.selected_story_path == run.directory / "SELECTED_STORY.md"
     assert run.script_path == run.directory / "SCRIPT.md"
+    assert run.voiceover_manifest_path == run.directory / "voiceover.json"
+    assert run.voiceover_audio_dir == run.directory / "voiceover"
     assert run.directory.is_dir()
 
 
@@ -67,6 +73,18 @@ def test_create_direct_source_run_does_not_write_candidates_json(
     assert not run.candidates_path.exists()
 
 
+def test_create_voiceover_audio_dir_returns_owned_audio_directory(
+    tmp_path: Path,
+) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="run-001")
+
+    audio_dir = store.create_voiceover_audio_dir(run)
+
+    assert audio_dir == run.voiceover_audio_dir
+    assert audio_dir.is_dir()
+
+
 def test_write_candidates_records_presented_candidates_and_selection(
     tmp_path: Path,
 ) -> None:
@@ -111,6 +129,59 @@ def test_write_candidates_records_presented_candidates_and_selection(
                 "source_name": None,
                 "published_at": None,
                 "summary": None,
+            },
+        ],
+    }
+
+
+def test_write_voiceover_manifest_records_provider_and_relative_audio_paths(
+    tmp_path: Path,
+) -> None:
+    store = ProductionRunStore(root=tmp_path / ".runs")
+    run = store.create(run_id="run-001")
+
+    store.write_voiceover_manifest(
+        run,
+        provider_name="fake-provider",
+        entries=[
+            VoiceoverManifestEntry(
+                segment_id="segment-001",
+                order=1,
+                narration_text="First narration.",
+                audio_path=run.voiceover_audio_dir / "segment-001.wav",
+                duration_seconds=1.25,
+                warnings=(),
+            ),
+            VoiceoverManifestEntry(
+                segment_id="segment-002",
+                order=2,
+                narration_text="Second narration.",
+                audio_path=run.voiceover_audio_dir / "segment-002.wav",
+                duration_seconds=2.5,
+                warnings=("trimmed silence",),
+            ),
+        ],
+    )
+
+    payload = json.loads(run.voiceover_manifest_path.read_text(encoding="utf-8"))
+    assert payload == {
+        "provider_name": "fake-provider",
+        "segments": [
+            {
+                "segment_id": "segment-001",
+                "order": 1,
+                "narration_text": "First narration.",
+                "audio_path": "voiceover/segment-001.wav",
+                "duration_seconds": 1.25,
+                "warnings": [],
+            },
+            {
+                "segment_id": "segment-002",
+                "order": 2,
+                "narration_text": "Second narration.",
+                "audio_path": "voiceover/segment-002.wav",
+                "duration_seconds": 2.5,
+                "warnings": ["trimmed silence"],
             },
         ],
     }

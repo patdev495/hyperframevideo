@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Implement VieNeu Voiceover Provider
 
@@ -14,14 +14,14 @@ Automated tests should use a fake VieNeu SDK/provider and must not run real mode
 
 ## Acceptance criteria
 
-- [ ] A `VoiceoverProvider` interface or protocol exists with a small stable method.
-- [ ] The VieNeu provider accepts ordered voiceover segments.
-- [ ] The provider writes one `.wav` file per segment through the VieNeu SDK.
-- [ ] The provider returns typed output metadata for each segment.
-- [ ] Provider metadata includes `provider_name` and selected VieNeu voice configuration.
-- [ ] Missing VieNeu installation or runtime setup produces a readable diagnostic.
-- [ ] No API keys, OS speech settings, or real HyperFrames installation are required.
-- [ ] Tests use a fake VieNeu SDK/provider and verify files/metadata without model downloads.
+- [x] A `VoiceoverProvider` interface or protocol exists with a small stable method.
+- [x] The VieNeu provider accepts ordered voiceover segments.
+- [x] The provider writes one `.wav` file per segment through the VieNeu SDK.
+- [x] The provider returns typed output metadata for each segment.
+- [x] Provider metadata includes `provider_name` and selected VieNeu voice configuration.
+- [x] Missing VieNeu installation or runtime setup produces a readable diagnostic.
+- [x] No API keys, OS speech settings, or real HyperFrames installation are required.
+- [x] Tests use a fake VieNeu SDK/provider and verify files/metadata without model downloads.
 
 ## Blocked by
 

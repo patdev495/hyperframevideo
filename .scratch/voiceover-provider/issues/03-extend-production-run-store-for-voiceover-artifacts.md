@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Extend Production Run Store for voiceover artifacts
 
@@ -14,12 +14,12 @@ This slice should centralize all voiceover filenames and directories in the stor
 
 ## Acceptance criteria
 
-- [ ] **Production Run Store** exposes a path for `voiceover.json`.
-- [ ] **Production Run Store** exposes or creates a dedicated directory for voiceover audio files.
-- [ ] A caller can write a voiceover manifest for a **Production Run**.
-- [ ] The manifest includes provider name and one entry per voiceover segment.
-- [ ] Audio paths in the manifest are relative to the **Production Run** directory.
-- [ ] Tests verify manifest structure and path layout using a temporary run directory.
+- [x] **Production Run Store** exposes a path for `voiceover.json`.
+- [x] **Production Run Store** exposes or creates a dedicated directory for voiceover audio files.
+- [x] A caller can write a voiceover manifest for a **Production Run**.
+- [x] The manifest includes provider name and one entry per voiceover segment.
+- [x] Audio paths in the manifest are relative to the **Production Run** directory.
+- [x] Tests verify manifest structure and path layout using a temporary run directory.
 
 ## Blocked by
 

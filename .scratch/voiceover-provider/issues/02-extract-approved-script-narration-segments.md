@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Extract approved script narration segments
 
@@ -14,12 +14,12 @@ This slice should make the command fail clearly when an approved script contains
 
 ## Acceptance criteria
 
-- [ ] Approved `SCRIPT.md` content with multiple `Narration:` lines produces ordered typed voiceover segments.
-- [ ] Segment IDs are stable and based on script order, such as `segment-001`.
-- [ ] Blank narration text is ignored or rejected with a readable diagnostic.
-- [ ] Approved scripts with no narration fail with a readable diagnostic.
-- [ ] The extractor does not know about audio providers or file paths.
-- [ ] Tests use script markdown fixtures and verify observable segment output.
+- [x] Approved `SCRIPT.md` content with multiple `Narration:` lines produces ordered typed voiceover segments.
+- [x] Segment IDs are stable and based on script order, such as `segment-001`.
+- [x] Blank narration text is ignored or rejected with a readable diagnostic.
+- [x] Approved scripts with no narration fail with a readable diagnostic.
+- [x] The extractor does not know about audio providers or file paths.
+- [x] Tests use script markdown fixtures and verify observable segment output.
 
 ## Blocked by
 

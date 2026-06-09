@@ -15,13 +15,13 @@ The MVP currently only supports **Direct Source Requests** (providing a specific
 
 ## 2. Voiceover Provider Contract
 
-The system currently stops at `SCRIPT.md` generation and approval. Future steps will require converting the approved script text into audio.
+The system now includes a CLI-first Voiceover Provider phase after Script Approval. See [Voiceover Workflow](workflows/voiceover-workflow.md) and [Voiceover Artifacts](artifacts/voiceover.md) for the current command and manifest contract.
 
 **Contract:**
-- The pipeline will define a `VoiceoverProvider` interface.
-- Implementations must accept text from `SCRIPT.md` (specifically the `Narration` blocks) and output audio file paths (e.g., `.wav` or `.mp3`) into the Production Run directory.
-- The first real implementation should target VieNeu-TTS through a thin adapter because it is Vietnamese-focused and can run locally without API keys.
-- The interface must be abstract enough to support HyperFrames local TTS or external API providers later (such as OpenAI, ElevenLabs, FPT.AI, Viettel AI, or Zalo AI) without changing the core orchestration logic.
+- The pipeline defines a `VoiceoverProvider` interface.
+- Implementations accept ordered narration segments from approved `SCRIPT.md` content and output audio file paths into the Production Run directory.
+- The first real implementation targets VieNeu-TTS through a thin adapter because it is Vietnamese-focused and can run locally without API keys after local setup.
+- The interface remains abstract enough to support HyperFrames local TTS or external API providers later (such as OpenAI, ElevenLabs, FPT.AI, Viettel AI, or Zalo AI) without changing the core orchestration logic.
 
 ## 3. STORYBOARD.md Responsibility Boundary
 

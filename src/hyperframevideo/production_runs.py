@@ -14,6 +14,16 @@ class ProductionRunExistsError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
+class VoiceoverManifestEntry:
+    segment_id: str
+    order: int
+    narration_text: str
+    audio_path: Path
+    duration_seconds: float
+    warnings: Sequence[str] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ProductionRun:
     run_id: str
     directory: Path
@@ -33,6 +43,14 @@ class ProductionRun:
     @property
     def script_path(self) -> Path:
         return self.directory / "SCRIPT.md"
+
+    @property
+    def voiceover_manifest_path(self) -> Path:
+        return self.directory / "voiceover.json"
+
+    @property
+    def voiceover_audio_dir(self) -> Path:
+        return self.directory / "voiceover"
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,5 +90,33 @@ class ProductionRunStore:
             "candidates": [asdict(candidate) for candidate in candidates],
         }
         run.candidates_path.write_text(
+            json.dumps(payload, indent=2), encoding="utf-8"
+        )
+
+    def create_voiceover_audio_dir(self, run: ProductionRun) -> Path:
+        run.voiceover_audio_dir.mkdir(parents=True, exist_ok=True)
+        return run.voiceover_audio_dir
+
+    def write_voiceover_manifest(
+        self,
+        run: ProductionRun,
+        provider_name: str,
+        entries: Sequence[VoiceoverManifestEntry],
+    ) -> None:
+        payload = {
+            "provider_name": provider_name,
+            "segments": [
+                {
+                    "segment_id": entry.segment_id,
+                    "order": entry.order,
+                    "narration_text": entry.narration_text,
+                    "audio_path": entry.audio_path.relative_to(run.directory).as_posix(),
+                    "duration_seconds": entry.duration_seconds,
+                    "warnings": list(entry.warnings),
+                }
+                for entry in entries
+            ],
+        }
+        run.voiceover_manifest_path.write_text(
             json.dumps(payload, indent=2), encoding="utf-8"
         )

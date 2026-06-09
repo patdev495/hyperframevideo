@@ -10,10 +10,23 @@ from hyperframevideo.candidate_selector import CandidateSelector
 from hyperframevideo.discovery_engine import DiscoveryEngine
 from hyperframevideo.models import DirectSourceRequest, DiscoveryRequest, NewsCandidate
 from hyperframevideo.news_candidate_builder import NewsCandidateBuilder
-from hyperframevideo.production_runs import ProductionRunStore
+from hyperframevideo.production_runs import (
+    ProductionRun,
+    ProductionRunStore,
+    VoiceoverManifestEntry,
+)
+from hyperframevideo.script_approval import ScriptApprovalGate
 from hyperframevideo.source_evidence import SourceEvidenceBuilder
 from hyperframevideo.source_extractor import SourceExtractor
 from hyperframevideo.story_artifacts import StoryArtifactGenerator
+from hyperframevideo.voiceover_segments import (
+    VoiceoverNarrationError,
+    VoiceoverNarrationExtractor,
+)
+from hyperframevideo.vieneu_voiceover import (
+    VieNeuVoiceoverProvider,
+    VoiceoverProviderError,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -45,6 +58,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=5,
         help="The number of discovery candidates to show.",
     )
+    parser.add_argument(
+        "--voiceover",
+        metavar="RUN_ID",
+        help="Generate voiceover for an approved production run.",
+    )
     return parser
 
 
@@ -58,6 +76,73 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.url and args.discover:
         parser.error("Provide either a source URL or --discover, not both.")
+
+    if args.voiceover:
+        if args.url or args.discover:
+            parser.error("Provide --voiceover without a source URL or --discover.")
+
+        store = ProductionRunStore()
+        run = ProductionRun(
+            run_id=args.voiceover,
+            directory=store.root / args.voiceover,
+        )
+        script_path = run.script_path
+        try:
+            script_markdown = script_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            print(
+                f"Error: SCRIPT.md not found for Production Run: {args.voiceover}",
+                file=sys.stderr,
+            )
+            return 1
+
+        approval = ScriptApprovalGate().evaluate(script_markdown)
+        if not approval.is_approved:
+            print(f"Error: {approval.diagnostic}", file=sys.stderr)
+            return 1
+
+        try:
+            segments = VoiceoverNarrationExtractor().extract(script_markdown)
+        except VoiceoverNarrationError as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        if run.voiceover_manifest_path.exists() or run.voiceover_audio_dir.exists():
+            print(
+                f"Error: Voiceover artifacts already exist for Production Run: {args.voiceover}",
+                file=sys.stderr,
+            )
+            return 1
+
+        audio_dir = store.create_voiceover_audio_dir(run)
+        try:
+            outputs = VieNeuVoiceoverProvider().synthesize(segments, audio_dir=audio_dir)
+        except VoiceoverProviderError as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        provider_name = outputs[0].provider_name
+        store.write_voiceover_manifest(
+            run,
+            provider_name=provider_name,
+            entries=[
+                VoiceoverManifestEntry(
+                    segment_id=output.segment_id,
+                    order=output.order,
+                    narration_text=output.narration_text,
+                    audio_path=output.audio_path,
+                    duration_seconds=output.duration_seconds,
+                    warnings=output.warnings,
+                )
+                for output in outputs
+            ],
+        )
+
+        print(f"Voiceover approved for Production Run: {args.voiceover}")
+        print(f"Extracted voiceover segments: {len(segments)}")
+        print(f"Voiceover manifest: {run.voiceover_manifest_path}")
+        print("Next Step: Use voiceover.json for storyboard timing.")
+        return 0
 
     if not args.url and not args.discover:
         parser.print_help()
