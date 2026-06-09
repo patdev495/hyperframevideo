@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Wire Discovery Request into CLI Orchestrator
 
@@ -24,15 +24,15 @@ The existing `url` positional argument and Direct Source behavior must remain co
 
 ## Acceptance criteria
 
-- [ ] `--discover "<query>"` flag is added to the CLI.
-- [ ] `--candidates N` flag controls candidate count (default 5).
-- [ ] Running `--discover` triggers the full Discovery flow end-to-end.
-- [ ] Re-run (`0`/`q`) loops the search without crashing.
-- [ ] The resulting **Production Run** directory contains `candidates.json`, `source-evidence.json`, `SELECTED_STORY.md`, and `SCRIPT.md`.
-- [ ] CLI output prints the created run path and the same next-step guidance as the Direct Source flow.
-- [ ] Existing Direct Source flow (positional URL argument) is unaffected.
-- [ ] An integration-style test covers the end-to-end Discovery flow using mocked search results and a fixture source page.
-- [ ] Failures at any stage produce readable diagnostics and do not leave misleading artifacts.
+- [x] `--discover "<query>"` flag is added to the CLI.
+- [x] `--candidates N` flag controls candidate count (default 5).
+- [x] Running `--discover` triggers the full Discovery flow end-to-end.
+- [x] Re-run (`0`/`q`) loops the search without crashing.
+- [x] The resulting **Production Run** directory contains `candidates.json`, `source-evidence.json`, `SELECTED_STORY.md`, and `SCRIPT.md`.
+- [x] CLI output prints the created run path and the same next-step guidance as the Direct Source flow.
+- [x] Existing Direct Source flow (positional URL argument) is unaffected.
+- [x] An integration-style test covers the end-to-end Discovery flow using mocked search results and a fixture source page.
+- [x] Failures at any stage produce readable diagnostics and do not leave misleading artifacts.
 
 ## Blocked by
 

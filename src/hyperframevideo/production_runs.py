@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Sequence
 
+from hyperframevideo.models import NewsCandidate
 from hyperframevideo.story_artifacts import StoryArtifacts
 
 
@@ -18,6 +21,10 @@ class ProductionRun:
     @property
     def source_evidence_path(self) -> Path:
         return self.directory / "source-evidence.json"
+
+    @property
+    def candidates_path(self) -> Path:
+        return self.directory / "candidates.json"
 
     @property
     def selected_story_path(self) -> Path:
@@ -49,3 +56,21 @@ class ProductionRunStore:
             artifacts.selected_story_markdown, encoding="utf-8"
         )
         run.script_path.write_text(artifacts.script_markdown, encoding="utf-8")
+
+    def write_candidates(
+        self,
+        run: ProductionRun,
+        candidates: Sequence[NewsCandidate],
+        selected_candidate: NewsCandidate,
+    ) -> None:
+        selected_index = candidates.index(selected_candidate) + 1
+        payload = {
+            "selected_candidate": {
+                "index": selected_index,
+                "url": selected_candidate.url,
+            },
+            "candidates": [asdict(candidate) for candidate in candidates],
+        }
+        run.candidates_path.write_text(
+            json.dumps(payload, indent=2), encoding="utf-8"
+        )

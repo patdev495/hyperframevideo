@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Extend Production Run Store to write candidates.json
 
@@ -16,11 +16,11 @@ Runs created from a **Direct Source Request** do not write `candidates.json` —
 
 ## Acceptance criteria
 
-- [ ] `ProductionRunStore` exposes a method to write `candidates.json` to the run directory.
-- [ ] `candidates.json` contains the full list of candidates (url, title, source_name, published_at, summary) and identifies the selected candidate.
-- [ ] Runs from **Direct Source Requests** do not produce `candidates.json`.
-- [ ] Tests verify the file is written with the correct structure using a temporary run directory.
-- [ ] The filename `candidates.json` is defined in one place only (the store), not hardcoded elsewhere.
+- [x] `ProductionRunStore` exposes a method to write `candidates.json` to the run directory.
+- [x] `candidates.json` contains the full list of candidates (url, title, source_name, published_at, summary) and identifies the selected candidate.
+- [x] Runs from **Direct Source Requests** do not produce `candidates.json`.
+- [x] Tests verify the file is written with the correct structure using a temporary run directory.
+- [x] The filename `candidates.json` is defined in one place only (the store), not hardcoded elsewhere.
 
 ## Blocked by
 

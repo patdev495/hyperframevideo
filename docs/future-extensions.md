@@ -20,8 +20,8 @@ The system currently stops at `SCRIPT.md` generation and approval. Future steps 
 **Contract:**
 - The pipeline will define a `VoiceoverProvider` interface.
 - Implementations must accept text from `SCRIPT.md` (specifically the `Narration` blocks) and output audio file paths (e.g., `.wav` or `.mp3`) into the Production Run directory.
-- The first implementation should target local TTS (e.g., HyperFrames local TTS plugins) to maintain the local-first execution ADR.
-- The interface must be abstract enough to support external API providers later (such as Vietnamese TTS providers like FPT.AI, Viettel AI, or Zalo AI) without changing the core orchestration logic.
+- The first real implementation should target VieNeu-TTS through a thin adapter because it is Vietnamese-focused and can run locally without API keys.
+- The interface must be abstract enough to support HyperFrames local TTS or external API providers later (such as OpenAI, ElevenLabs, FPT.AI, Viettel AI, or Zalo AI) without changing the core orchestration logic.
 
 ## 3. STORYBOARD.md Responsibility Boundary
 

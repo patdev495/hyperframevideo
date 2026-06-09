@@ -1,6 +1,10 @@
+import json
 import pathlib
 import subprocess
 import sys
+from io import StringIO
+
+from hyperframevideo import cli
 
 
 def test_cli_version_reports_package_version() -> None:
@@ -141,3 +145,143 @@ def test_cli_fails_gracefully_if_run_already_exists(tmp_path: "pathlib.Path") ->
 
     # Assert that no artifacts were written to the existing directory
     assert not (run_dir / "source-evidence.json").exists()
+
+
+def test_cli_discovery_request_to_draft_end_to_end(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    source_html = """
+    <html>
+      <head>
+        <title>Discovery selected story</title>
+      </head>
+      <body>
+        <article>
+          <h1>Discovery selected story</h1>
+          <p>This fixture story is selected from discovery candidates.</p>
+          <p>It contains enough readable text for the extraction path.</p>
+          <p>The test verifies discovery mode converges with direct source drafting.</p>
+        </article>
+      </body>
+    </html>
+    """
+    fixture_path = tmp_path / "discovered.html"
+    fixture_path.write_text(source_html, encoding="utf-8")
+
+    class FakeDiscoveryEngine:
+        def search(self, request):
+            assert request.query == "AI video"
+            assert request.candidate_count == 2
+            return [
+                {
+                    "url": fixture_path.as_uri(),
+                    "title": "Discovery selected story",
+                    "source": "Fixture News",
+                    "date": "2026-06-09",
+                    "body": "A candidate summary.",
+                }
+            ]
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "DiscoveryEngine", FakeDiscoveryEngine)
+    monkeypatch.setattr(sys, "stdin", StringIO("1\n"))
+
+    result = cli.main(
+        ["--discover", "AI video", "--candidates", "2", "--run-id", "discovery-run"]
+    )
+
+    assert result == 0
+    stdout = capsys.readouterr().out
+    assert "Production Run created:" in stdout
+    assert "Next Step: Review the draft script at:" in stdout
+    assert "To approve the script" in stdout
+    run_dir = tmp_path / ".runs" / "discovery-run"
+    assert (run_dir / "candidates.json").is_file()
+    assert (run_dir / "source-evidence.json").is_file()
+    assert (run_dir / "SELECTED_STORY.md").is_file()
+    assert (run_dir / "SCRIPT.md").is_file()
+
+    candidates = json.loads((run_dir / "candidates.json").read_text(encoding="utf-8"))
+    assert candidates["selected_candidate"]["url"] == fixture_path.as_uri()
+    assert candidates["candidates"][0]["title"] == "Discovery selected story"
+
+
+def test_cli_discovery_request_reruns_search_when_selection_signals_rerun(
+    tmp_path: "pathlib.Path", monkeypatch
+) -> None:
+    first_fixture = tmp_path / "first.html"
+    first_fixture.write_text(
+        "<html><body><article><h1>First story</h1><p>First batch.</p></article></body></html>",
+        encoding="utf-8",
+    )
+    second_fixture = tmp_path / "second.html"
+    second_fixture.write_text(
+        """
+        <html><body><article>
+          <h1>Second story</h1>
+          <p>The second batch contains the selected discovery story.</p>
+          <p>It has enough readable text to complete the draft path.</p>
+          <p>The re-run loop should use this candidate URL.</p>
+        </article></body></html>
+        """,
+        encoding="utf-8",
+    )
+
+    class FakeDiscoveryEngine:
+        calls = 0
+
+        def search(self, request):
+            FakeDiscoveryEngine.calls += 1
+            if FakeDiscoveryEngine.calls == 1:
+                return [
+                    {
+                        "url": first_fixture.as_uri(),
+                        "title": "First story",
+                        "source": "Fixture News",
+                        "date": "2026-06-09",
+                        "body": "First batch.",
+                    }
+                ]
+            return [
+                {
+                    "url": second_fixture.as_uri(),
+                    "title": "Second story",
+                    "source": "Fixture News",
+                    "date": "2026-06-09",
+                    "body": "Second batch.",
+                }
+            ]
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "DiscoveryEngine", FakeDiscoveryEngine)
+    monkeypatch.setattr(sys, "stdin", StringIO("0\n1\n"))
+
+    result = cli.main(["--discover", "AI video", "--run-id", "rerun-run"])
+
+    assert result == 0
+    assert FakeDiscoveryEngine.calls == 2
+    candidates = json.loads(
+        (tmp_path / ".runs" / "rerun-run" / "candidates.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert candidates["selected_candidate"]["url"] == second_fixture.as_uri()
+
+
+def test_cli_discovery_request_fails_gracefully_when_no_candidates_are_found(
+    tmp_path: "pathlib.Path", monkeypatch, capsys
+) -> None:
+    class EmptyDiscoveryEngine:
+        def search(self, request):
+            return []
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "DiscoveryEngine", EmptyDiscoveryEngine)
+
+    result = cli.main(["--discover", "missing topic", "--run-id", "empty-run"])
+
+    assert result == 1
+    stderr = capsys.readouterr().err
+    assert "Error:" in stderr
+    assert "No news candidates found for: missing topic" in stderr
+    assert not (tmp_path / ".runs" / "empty-run").exists()

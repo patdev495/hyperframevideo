@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Build News Candidate Builder
 
@@ -16,11 +16,11 @@ This module is the only place in the codebase that knows the shape of raw DuckDu
 
 ## Acceptance criteria
 
-- [ ] `NewsCandidateBuilder.build(raw_results)` returns a list of typed `NewsCandidate` objects.
-- [ ] All five fields are mapped correctly from the DuckDuckGo result shape.
-- [ ] Missing or empty optional fields (`published_at`, `summary`) degrade to `None` without raising.
-- [ ] `summary` is capped to a reasonable length (one sentence or ~150 characters) if the raw `body` is long.
-- [ ] Tests use fixture raw result dicts (no network); at least one test covers full fields, one covers missing optional fields, and one covers summary truncation.
+- [x] `NewsCandidateBuilder.build(raw_results)` returns a list of typed `NewsCandidate` objects.
+- [x] All five fields are mapped correctly from the DuckDuckGo result shape.
+- [x] Missing or empty optional fields (`published_at`, `summary`) degrade to `None` without raising.
+- [x] `summary` is capped to a reasonable length (one sentence or ~150 characters) if the raw `body` is long.
+- [x] Tests use fixture raw result dicts (no network); at least one test covers full fields, one covers missing optional fields, and one covers summary truncation.
 
 ## Blocked by
 

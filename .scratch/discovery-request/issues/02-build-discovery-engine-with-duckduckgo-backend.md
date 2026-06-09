@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Build Discovery Engine with DuckDuckGo backend
 
@@ -16,11 +16,11 @@ The engine does not normalize results — that is the News Candidate Builder's j
 
 ## Acceptance criteria
 
-- [ ] `duckduckgo-search` is added to project dependencies via `uv add`.
-- [ ] `DiscoveryEngine` accepts a `DiscoveryRequest` and returns a list of raw result dicts.
-- [ ] The number of results respects `DiscoveryRequest.candidate_count`.
-- [ ] Network errors surface as readable diagnostics rather than raw tracebacks.
-- [ ] Tests use a mocked DuckDuckGo client (no real network calls); at least one test covers the correct count of results returned and one covers error handling.
+- [x] `duckduckgo-search` is added to project dependencies via `uv add`.
+- [x] `DiscoveryEngine` accepts a `DiscoveryRequest` and returns a list of raw result dicts.
+- [x] The number of results respects `DiscoveryRequest.candidate_count`.
+- [x] Network errors surface as readable diagnostics rather than raw tracebacks.
+- [x] Tests use a mocked DuckDuckGo client (no real network calls); at least one test covers the correct count of results returned and one covers error handling.
 
 ## Blocked by
 
